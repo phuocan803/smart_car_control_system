@@ -9,6 +9,7 @@ import time
 import threading
 import json
 import socket
+import os
 
 COM_PORT = 'COM8'
 BAUD_RATE = 9600
@@ -117,7 +118,10 @@ class SmartCarRequestHandler(BaseHTTPRequestHandler):
             self.send_response(200)
             self.send_header('Content-type', 'text/html; charset=utf-8')
             self.end_headers()
-            self.wfile.write(self.get_html_page().encode('utf-8'))
+            
+            html_path = os.path.join(os.path.dirname(__file__), 'web.html')
+            with open(html_path, 'r', encoding='utf-8') as f:
+                self.wfile.write(f.read().encode('utf-8'))
         
         elif self.path == '/status':
             self.send_response(200)
@@ -151,205 +155,6 @@ class SmartCarRequestHandler(BaseHTTPRequestHandler):
         else:
             self.send_response(404)
             self.end_headers()
-    
-    def get_html_page(self):
-        return """
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SmartCar - Web Control</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);        }
-        .container {
-            background: white;
-            padding: 30px;
-            border-radius: 20px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
-            text-align: center;
-            max-width: 500px;
-            width: 90%;
-        }
-        h1 {
-            color: #333;
-            margin-bottom: 10px;
-        }
-        .status {
-            background: #f0f0f0;
-            padding: 15px;
-            border-radius: 10px;
-            margin: 20px 0;
-        }
-        .status-item {
-            margin: 5px 0;
-            font-size: 14px;
-        }
-        .controls {
-            margin: 30px 0;
-        }
-        .button-row {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            margin: 10px 0;
-        }
-        button {
-            width: 100px;
-            height: 100px;
-            font-size: 20px;
-            font-weight: bold;
-            border: none;
-            border-radius: 15px;
-            cursor: pointer;
-            transition: all 0.2s;
-            color: white;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-        }
-        button:active {
-            transform: scale(0.95);
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-        }
-        #btnW { background: #4CAF50; }
-        #btnA { background: #2196F3; }
-        #btnS { background: #f44336; }
-        #btnD { background: #FF9800; }
-        #btnX { background: #9E9E9E; }
-        
-        button:hover {
-            opacity: 0.9;
-        }
-        
-        .current-cmd {
-            font-size: 24px;
-            font-weight: bold;
-            padding: 20px;
-            border-radius: 10px;
-            margin: 20px 0;
-            background: #9E9E9E;
-            color: white;
-        }
-        
-        .api-info {
-            background: #e3f2fd;
-            padding: 15px;
-            border-radius: 10px;
-            margin-top: 20px;
-            text-align: left;
-            font-size: 13px;
-        }
-        
-        .api-info code {
-            background: #fff;
-            padding: 2px 6px;
-            border-radius: 3px;
-            font-family: monospace;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>SmartCar Web Control</h1>
-        <p style="color: #666;">Điều khiển xe từ xa qua LAN</p>
-        
-        <div class="status">
-            <div class="status-item">Trạng thái: <span id="status">Đang kết nối...</span></div>
-            <div class="status-item">Số lệnh đã gửi: <span id="count">0</span></div>
-        </div>
-        
-        <div class="current-cmd" id="currentCmd">Lệnh hiện tại: DỪNG (X)</div>
-        
-        <div class="controls">
-            <div class="button-row">
-                <button id="btnW" onclick="sendCommand('W')">W<br>TIẾN</button>
-            </div>
-            <div class="button-row">
-                <button id="btnA" onclick="sendCommand('A')">A<br>TRÁI</button>
-                <button id="btnS" onclick="sendCommand('S')">S<br>LÙI</button>
-                <button id="btnD" onclick="sendCommand('D')">D<br>PHẢI</button>
-            </div>
-            <div class="button-row">
-                <button id="btnX" onclick="sendCommand('X')">X<br>DỪNG</button>
-            </div>
-        </div>
-        
-        <div class="api-info">
-            <strong>API cho curl:</strong><br>
-            <code>curl http://IP:8080/cmd/W</code> - Tiến<br>
-            <code>curl http://IP:8080/cmd/A</code> - Trái<br>
-            <code>curl http://IP:8080/cmd/S</code> - Lùi<br>
-            <code>curl http://IP:8080/cmd/D</code> - Phải<br>
-            <code>curl http://IP:8080/cmd/X</code> - Dừng<br>
-            <code>curl http://IP:8080/status</code> - Trạng thái
-        </div>
-    </div>
-    
-    <script>
-        const commands = {
-            'W': { name: 'TIẾN', color: '#4CAF50' },
-            'A': { name: 'TRÁI', color: '#2196F3' },
-            'S': { name: 'LÙI', color: '#f44336' },
-            'D': { name: 'PHẢI', color: '#FF9800' },
-            'X': { name: 'DỪNG', color: '#9E9E9E' }
-        };
-        
-        function sendCommand(cmd) {
-            fetch('/cmd/' + cmd)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        updateDisplay(cmd);
-                    }
-                })
-                .catch(error => console.error('Error:', error));
-        }
-        
-        function updateDisplay(cmd) {
-            const info = commands[cmd];
-            const display = document.getElementById('currentCmd');
-            display.textContent = `Lệnh hiện tại: ${info.name} (${cmd})`;
-            display.style.background = info.color;
-        }
-        
-        function updateStatus() {
-            fetch('/status')
-                .then(response => response.json())
-                .then(data => {
-                    document.getElementById('status').textContent = 
-                        data.is_running ? 'Hoạt động' : 'Ngừng';
-                    document.getElementById('count').textContent = data.command_count;
-                    if (data.current_command) {
-                        updateDisplay(data.current_command);
-                    }
-                })
-                .catch(error => {
-                    document.getElementById('status').textContent = 'Mất kết nối';
-                });
-        }
-        
-        // Keyboard support
-        document.addEventListener('keydown', function(e) {
-            const key = e.key.toUpperCase();
-            if (commands[key]) {
-                sendCommand(key);
-                e.preventDefault();
-            }
-        });
-        
-        // Update status every 500ms
-        setInterval(updateStatus, 500);
-        updateStatus();
-    </script>
-</body>
-</html>
-"""
     
     def log_message(self, format, *args):
         timestamp = time.strftime("%H:%M:%S")
