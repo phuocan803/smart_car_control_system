@@ -293,7 +293,7 @@ SERVER_PORT = 8080
 .venv/Scripts/python.exe run.py → [1]
 
 # 2. Test keyboard GUI (không cần Arduino)
-.venv/Scripts/python.exe keyboard_control.py --test
+.venv/Scripts/python.exe /Keyboard/keyboard_control.py --test
 
 # 3. Test web server (không cần Arduino)
 .venv/Scripts/python.exe Web/web_control.py --test    
