@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartCar - Web Control</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+        }
+
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            max-width: 500px;
+            width: 90%;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .status {
+            background: #f0f0f0;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+
+        .status-item {
+            margin: 5px 0;
+            font-size: 14px;
+        }
+
+        .controls {
+            margin: 30px 0;
+        }
+
+        .button-row {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 10px 0;
+        }
+
+        button {
+            width: 100px;
+            height: 100px;
+            font-size: 20px;
+            font-weight: bold;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: white;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        button:active {
+            transform: scale(0.95);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        #btnW {
+            background: #4CAF50;
+        }
+
+        #btnA {
+            background: #2196F3;
+        }
+
+        #btnS {
+            background: #f44336;
+        }
+
+        #btnD {
+            background: #FF9800;
+        }
+
+        #btnX {
+            background: #9E9E9E;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        .current-cmd {
+            font-size: 24px;
+            font-weight: bold;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            background: #9E9E9E;
+            color: white;
+        }
+
+        .api-info {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            text-align: left;
+            font-size: 13px;
+        }
+
+        .api-info code {
+            background: #fff;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>SmartCar Web Control</h1>
+        <p style="color: #666;">Điều khiển xe từ xa qua LAN</p>
+
+        <div class="status">
+            <div class="status-item">Trạng thái: <span id="status">Đang kết nối...</span></div>
+            <div class="status-item">Số lệnh đã gửi: <span id="count">0</span></div>
+        </div>
+
+        <div class="current-cmd" id="currentCmd">Lệnh hiện tại: DỪNG (X)</div>
+
+        <div class="controls">
+            <div class="button-row">
+                <button id="btnW" onclick="sendCommand('W')">W<br>TIẾN</button>
+            </div>
+            <div class="button-row">
+                <button id="btnA" onclick="sendCommand('A')">A<br>TRÁI</button>
+                <button id="btnS" onclick="sendCommand('S')">S<br>LÙI</button>
+                <button id="btnD" onclick="sendCommand('D')">D<br>PHẢI</button>
+            </div>
+            <div class="button-row">
+                <button id="btnX" onclick="sendCommand('X')">X<br>DỪNG</button>
+            </div>
+        </div>
+
+        <div class="api-info" id="apiInfo">
+            <strong>API cho curl:</strong><br>
+            <span id="curlCommands">Đang tải...</span>
+        </div>
+    </div>
+
+    <script>
+        const commands = {
+            'W': { name: 'TIẾN', color: '#4CAF50' },
+            'A': { name: 'TRÁI', color: '#2196F3' },
+            'S': { name: 'LÙI', color: '#f44336' },
+            'D': { name: 'PHẢI', color: '#FF9800' },
+            'X': { name: 'DỪNG', color: '#9E9E9E' }
+        };
+
+        function sendCommand(cmd) {
+            fetch('/cmd/' + cmd)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        updateDisplay(cmd);
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+        }
+
+        function updateDisplay(cmd) {
+            const info = commands[cmd];
+            const display = document.getElementById('currentCmd');
+            display.textContent = `Lệnh hiện tại: ${info.name} (${cmd})`;
+            display.style.background = info.color;
+        }
+
+        function updateStatus() {
+            fetch('/status')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('status').textContent =
+                        data.is_running ? 'Hoạt động' : 'Ngừng';
+                    document.getElementById('count').textContent = data.command_count;
+                    if (data.current_command) {
+                        updateDisplay(data.current_command);
+                    }
+                })
+                .catch(error => {
+                    document.getElementById('status').textContent = 'Mất kết nối';
+                });
+        }
+
+        function loadCurlCommands() {
+            const baseUrl = window.location.origin;
+            const curlDiv = document.getElementById('curlCommands');
+            curlDiv.innerHTML = `
+                <strong>Điều khiển:</strong><br>
+                <code>curl ${baseUrl}/cmd/W</code> - Tiến<br>
+                <code>curl ${baseUrl}/cmd/A</code> - Trái<br>
+                <code>curl ${baseUrl}/cmd/S</code> - Lùi<br>
+                <code>curl ${baseUrl}/cmd/D</code> - Phải<br>
+                <code>curl ${baseUrl}/cmd/X</code> - Dừng<br>
+                <br>
+                <strong>Trạng thái:</strong><br>
+                <code>curl ${baseUrl}/status</code> - Lấy trạng thái hiện tại
+            `;
+        }
+
+        // Keyboard support
+        document.addEventListener('keydown', function (e) {
+            const key = e.key.toUpperCase();
+            if (commands[key]) {
+                sendCommand(key);
+                e.preventDefault();
+            }
+        });
+
+        // Initialize
+        loadCurlCommands();
+        setInterval(updateStatus, 500);
+        updateStatus();
+    </script>
+</body>
+
+</html>
