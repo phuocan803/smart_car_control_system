@@ -48,7 +48,7 @@ def main():
         
         confirm = input("Arduino da san sang? (y/n): ").strip().lower()
         if confirm == 'y':
-            os.system(f'{sys.executable} keyboard_control.py')
+            os.system(f'{sys.executable} Keyboard/keyboard_control.py')
         else:
             print("Huy bo!")
     
@@ -59,7 +59,7 @@ def main():
         
         confirm = input("Arduino da san sang? (y/n): ").strip().lower()
         if confirm == 'y':
-            os.system(f'{sys.executable} web_control.py')
+            os.system(f'{sys.executable} Web/web_control.py')
         else:
             print("Huy bo!")
             
