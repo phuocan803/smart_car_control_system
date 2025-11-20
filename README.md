@@ -13,13 +13,29 @@ Demo/
 │   └── openCV.py         - Camera test with visualization
 ├── UART/
 │   ├── UART.py           - Serial communication controller
-│   └── transfer_UART.py  - OpenCV to Arduino bridge
+│   ├── transfer_UART.py  - OpenCV to Arduino bridge
+│   └── hand.py           - Hand detection utilities
 ├── Car/
-│   └── SmartCar.ino      - Arduino firmware (3 modes)
+│   ├── SmartCar.ino      - Arduino firmware (3 modes)
+│   └── test_car.py       - Arduino test script
+├── Camera/
+│   ├── web_camera.py     - Flask camera streaming server
+│   ├── web.html          - Camera web interface
+│   ├── README_CAMERA.md  - Camera setup guide (Ubuntu)
+│   └── requirements_pi.txt - Camera dependencies
 ├── Web/
-│   └── web_control.py    - HTTP server for LAN control
-├── keyboard_control.py   - GUI keyboard control (Tkinter)
-└── run.py                - Main launcher
+│   ├── web_control.py    - HTTP server for LAN control
+│   └── web.html          - Web control interface
+├── Keyboard/
+│   └── keyboard_control.py - GUI keyboard control (Tkinter)
+├── LangChain (test)/
+│   ├── Voice.py          - Voice control with LangChain + OpenAI
+│   ├── README.md         - Voice control guide
+│   └── requirements.txt  - Voice control dependencies
+├── Test_Zigbee/
+│   └── test.py           - Zigbee communication test
+├── run.py                - Main launcher
+└── requirements.txt      - Main dependencies
 ```
 
 ---
