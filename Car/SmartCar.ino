@@ -37,7 +37,7 @@ unsigned long lastCommandTime = 0;
 void setup()
 {
   // Initialize Serial communication
-  Serial.begin(230400);
+  Serial.begin(9600);
 
   // Configure motor pins as outputs
   pinMode(IN1, OUTPUT);
