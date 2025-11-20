@@ -62,14 +62,14 @@ def main():
     print("=" * 60)
     print()
     
-    if not UART_PORT:
+    if not COM_PORT:
         print("Đang tự động tìm cổng COM...")
         port = auto_detect_port()
         if not port:
             print("Không tìm thấy cổng COM. Vui lòng kết nối Arduino.")
             return
     else:
-        port = UART_PORT
+        port = COM_PORT
         print(f"Đang sử dụng cổng đã cấu hình: {port}")
     
     print(f"Tốc độ truyền: {UART_BAUD} baud")
@@ -130,7 +130,7 @@ def main():
                     command = gesture_to_command.get(gesture, 'X')
                     if uart.send_command(command):
                         if gesture != last_gesture:
-                            log_prefix = "DỮNG" if gesture == 'X' else f"  {gesture}   "
+                            log_prefix = "DỪNG" if gesture == 'X' else f"  {gesture}   "
                             print(f"[{uart.command_count:4d}] {log_prefix} | {description}")
                             last_gesture = gesture
                 
@@ -141,17 +141,17 @@ def main():
                 color = colors.get(gesture, (255, 255, 255))
                 
                 cv2.rectangle(frame, (20, 20), (800, 220), color, -1)
-                cv2.rectangle(frame, (20, 20), (800, 220), (0, 0, 0), 5)
+                cv2.rectangle(frame, (20, 20), (800, 220), (255, 255, 255), 5)
                 
                 cv2.putText(frame, f"Cu chi: {gesture}", (40, 80),
-                           cv2.FONT_HERSHEY_SIMPLEX, 1.8, (255, 255, 255), 5)
+                           cv2.FONT_HERSHEY_SIMPLEX, 1.8, (0, 0, 0), 5)
                 
                 stats = uart.get_stats()
                 cv2.putText(frame, f"Lenh: '{stats['last_command']}' | Count: {stats['command_count']}", 
-                           (40, 140), cv2.FONT_HERSHEY_SIMPLEX, 1.2, (255, 255, 255), 3)
+                           (40, 140), cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 0, 0), 3)
                 
                 cv2.putText(frame, description, (40, 190),
-                           cv2.FONT_HERSHEY_SIMPLEX, 1.0, (255, 255, 255), 3)
+                           cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 0), 3)
                 
                 instructions = [
                     "X=Dung | W=Tien | S=Lui | A=Trai | D=Phai",

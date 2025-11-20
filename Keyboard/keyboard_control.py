@@ -45,7 +45,7 @@ class KeyboardControlGUI:
         
         # Auto-connect if not in test mode
         if not test_mode:
-            self.root.after(500, self.connect_arduino)
+            self.root.after(0, self.connect_arduino)
         
     def setup_ui(self):
         # Title
