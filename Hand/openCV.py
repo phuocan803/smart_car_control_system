@@ -43,9 +43,9 @@ while True:
     cv2.rectangle(frame, (20, 20), (700, 200), (0, 0, 0), 5)
     
     cv2.putText(frame, f"Output: {gesture}", (40, 90),
-                cv2.FONT_HERSHEY_SIMPLEX, 2.0, (0, 0, 0), 5)
+                cv2.FONT_HERSHEY_SIMPLEX, 2.0, (255, 255, 255), 5)
     cv2.putText(frame, description, (40, 160),
-                cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 0, 0), 4)
+                cv2.FONT_HERSHEY_SIMPLEX, 1.5, (255, 255, 255), 4)
     
     cv2.putText(frame, "X: DUNG (khong co tay) | W: TIEN (nam tay)", 
                 (20, frame.shape[0] - 120),

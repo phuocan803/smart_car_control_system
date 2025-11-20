@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Raspberry Pi Camera Stream</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            padding: 30px;
+            max-width: 900px;
+            width: 100%;
+        }
+
+        h1 {
+            color: #667eea;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+
+        .video-wrapper {
+            position: relative;
+            width: 100%;
+            background: #000;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .video-stream {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .info-panel {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .info-item:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            font-weight: 600;
+            color: #555;
+        }
+
+        .info-value {
+            color: #667eea;
+            font-family: monospace;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 5px 15px;
+            background: #4CAF50;
+            color: white;
+            border-radius: 20px;
+            font-size: 0.9em;
+            margin-top: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+
+            h1 {
+                font-size: 1.5em;
+            }
+
+            .subtitle {
+                font-size: 1em;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🎥 Raspberry Pi Camera Stream</h1>
+        <p class="subtitle">SmartCar - Camera Monitoring System</p>
+
+        <div class="video-wrapper">
+            <img class="video-stream" src="/video_feed" alt="Camera Stream">
+        </div>
+
+        <div class="info-panel">
+            <div class="info-item">
+                <span class="info-label">Loại camera:</span>
+                <span class="info-value" id="camera-type">Loading...</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Độ phân giải:</span>
+                <span class="info-value" id="resolution">Loading...</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Frame rate:</span>
+                <span class="info-value" id="fps">Loading...</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Chất lượng JPEG:</span>
+                <span class="info-value" id="quality">Loading...</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Địa chỉ LAN:</span>
+                <span class="info-value" id="url">Loading...</span>
+            </div>
+            <span class="status">● Đang stream</span>
+        </div>
+    </div>
+
+    <script>
+        // Load camera info from server
+        fetch('/camera_info')
+            .then(response => response.json())
+            .then(data => {
+                const cameraNames = {
+                    'picamera2': 'Pi Camera Module (picamera2)',
+                    'fswebcam': 'USB Webcam (fswebcam)',
+                    'unknown': 'Không phát hiện',
+                    'auto': 'Tự động phát hiện'
+                };
+
+                document.getElementById('camera-type').textContent =
+                    cameraNames[data.camera_type] || data.camera_type;
+                document.getElementById('resolution').textContent =
+                    `${data.width}x${data.height}`;
+                document.getElementById('fps').textContent = `${data.fps} FPS`;
+                document.getElementById('quality').textContent = `${data.quality}%`;
+                document.getElementById('url').textContent =
+                    `http://${data.ip}:${data.port}`;
+            })
+            .catch(error => {
+                console.error('Error loading camera info:', error);
+            });
+    </script>
+</body>
+
+</html>
