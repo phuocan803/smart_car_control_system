@@ -1,54 +1,62 @@
 # -*- coding: utf-8 -*-
 """
-web_camera.py - Raspberry Pi Camera Web Streaming Server
-NGÀY: 20/11/2025
+web_camera.py - Camera Web Streaming Server (Real-time)
+NGÀY: 21/11/2025
 
-Chạy trên Raspberry Pi 4 Ubuntu để stream camera qua LAN
-Không liên quan đến các module điều khiển xe
-Hỗ trợ cả picamera2 (Pi Camera) và fswebcam (USB Webcam)
+Stream camera trực tiếp qua web bằng OpenCV (không delay)
+Chạy trên Raspberry Pi hoặc PC với bất kỳ webcam/Pi Camera nào
 """
 from flask import Flask, Response, send_file, jsonify
-import subprocess
+import cv2
 import socket
 import os
-import time
-from io import BytesIO
 
 app = Flask(__name__)
 
 # Cấu hình camera
-CAMERA_TYPE = 'auto'  # 'auto', 'picamera2', hoặc 'fswebcam'
+CAMERA_INDEX = 0  # 0 = camera đầu tiên, 1 = camera thứ hai, ...
 FRAME_WIDTH = 640
 FRAME_HEIGHT = 480
 JPEG_QUALITY = 80
-FPS = 10  # Giới hạn FPS để giảm CPU usage
+FPS = 30  # FPS tối đa (camera sẽ tự điều chỉnh)
+
+# Global video capture
+camera = None
+
+def init_camera():
+    """Khởi tạo camera"""
+    global camera
+    if camera is None:
+        camera = cv2.VideoCapture(CAMERA_INDEX)
+        camera.set(cv2.CAP_PROP_FRAME_WIDTH, FRAME_WIDTH)
+        camera.set(cv2.CAP_PROP_FRAME_HEIGHT, FRAME_HEIGHT)
+        camera.set(cv2.CAP_PROP_FPS, FPS)
+        
+        if not camera.isOpened():
+            print(f"❌ Không thể mở camera {CAMERA_INDEX}")
+            return False
+        
+        print(f"✅ Camera {CAMERA_INDEX} đã sẵn sàng")
+        return True
+    return True
 
 def detect_camera_type():
-    """Tự động phát hiện loại camera"""
-    try:
-        # Kiểm tra picamera2
-        from picamera2 import Picamera2
+    """Phát hiện loại camera (chỉ để hiển thị)"""
+    # Thử detect Pi Camera
+    if os.path.exists('/dev/video0'):
         try:
-            picam2 = Picamera2()
-            picam2.close()
-            print("Phát hiện: Pi Camera Module (picamera2)")
-            return 'picamera2'
+            with open('/sys/class/video4linux/video0/name', 'r') as f:
+                name = f.read().strip()
+                if 'bcm2835' in name.lower() or 'mmal' in name.lower():
+                    return 'picamera'
         except:
             pass
-    except ImportError:
-        pass
-    
-    # Kiểm tra USB camera
-    result = subprocess.run(['ls', '/dev/video0'], capture_output=True)
-    if result.returncode == 0:
-        print("Phát hiện: USB Webcam")
-        return 'fswebcam'
-    
-    print("Không tìm thấy camera nào!")
-    return None
+        return 'usb_webcam'
+    return 'unknown'
+
 
 def get_local_ip():
-    """Lấy địa chỉ IP LAN của Raspberry Pi"""
+    """Lấy địa chỉ IP LAN"""
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.connect(("8.8.8.8", 80))
@@ -59,92 +67,32 @@ def get_local_ip():
         return "localhost"
 
 def generate_frames():
-    """Generator để stream video frames"""
-    # Auto-detect camera nếu cần
-    camera_type = CAMERA_TYPE
-    if camera_type == 'auto':
-        camera_type = detect_camera_type()
-        if not camera_type:
-            print("Lỗi: Không tìm thấy camera")
-            return
+    """Generator để stream video frames (real-time, không delay)"""
+    if not init_camera():
+        print("❌ Không thể khởi tạo camera")
+        return
     
-    if camera_type == 'picamera2':
-        # Sử dụng picamera2 cho Pi Camera Module
-        try:
-            from picamera2 import Picamera2
-            
-            picam2 = Picamera2()
-            config = picam2.create_video_configuration(
-                main={"size": (FRAME_WIDTH, FRAME_HEIGHT)}
-            )
-            picam2.configure(config)
-            picam2.start()
-            
-            print(f"Pi Camera đã khởi động: {FRAME_WIDTH}x{FRAME_HEIGHT} @ {FPS}fps")
-            
-            try:
-                while True:
-                    # Capture frame as JPEG
-                    frame_bytes = picam2.capture_file(BytesIO(), format='jpeg')
-                    
-                    yield (b'--frame\r\n'
-                           b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes.getvalue() + b'\r\n')
-                    
-                    time.sleep(1.0 / FPS)
-            
-            finally:
-                picam2.stop()
-                picam2.close()
-                print("Đã đóng Pi Camera")
-        
-        except ImportError:
-            print("Lỗi: picamera2 chưa cài đặt")
-            print("Ubuntu: sudo apt install -y python3-picamera2")
-            print("Hoặc đổi CAMERA_TYPE = 'fswebcam' trong code")
-            return
-        
-        except Exception as e:
-            print(f"Lỗi Pi Camera: {e}")
-            print("Thử: sudo modprobe bcm2835-v4l2")
-            print("Hoặc đổi sang USB Webcam")
-            return
+    print("📹 Bắt đầu streaming...")
     
-    else:
-        # Sử dụng fswebcam cho USB camera
-        print(f"Sử dụng fswebcam: {FRAME_WIDTH}x{FRAME_HEIGHT} @ {FPS}fps")
+    while True:
+        success, frame = camera.read()
         
-        # Kiểm tra fswebcam có sẵn không
-        result = subprocess.run(['which', 'fswebcam'], capture_output=True)
-        if result.returncode != 0:
-            print("Lỗi: fswebcam chưa cài đặt")
-            print("Cài đặt: sudo apt install -y fswebcam")
-            return
+        if not success:
+            print("⚠️ Không đọc được frame")
+            break
         
-        while True:
-            try:
-                # Capture từ USB camera bằng fswebcam
-                cmd = [
-                    'fswebcam',
-                    '-r', f'{FRAME_WIDTH}x{FRAME_HEIGHT}',
-                    '--jpeg', str(JPEG_QUALITY),
-                    '--no-banner',
-                    '-'
-                ]
-                
-                result = subprocess.run(cmd, capture_output=True)
-                
-                if result.returncode == 0:
-                    frame_bytes = result.stdout
-                    yield (b'--frame\r\n'
-                           b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
-                else:
-                    print(f"Lỗi fswebcam: {result.stderr.decode()}")
-                
-                time.sleep(1.0 / FPS)
-            
-            except Exception as e:
-                print(f"Lỗi capture: {e}")
-                time.sleep(1)
+        # Encode frame thành JPEG
+        ret, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, JPEG_QUALITY])
+        
+        if not ret:
+            continue
+        
+        # Convert to bytes
+        frame_bytes = buffer.tobytes()
+        
+        # Yield frame theo MJPEG format
+        yield (b'--frame\r\n'
+               b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
 
 @app.route('/')
 def index():
@@ -155,23 +103,24 @@ def index():
 @app.route('/camera_info')
 def camera_info():
     """API trả về thông tin camera"""
-    camera_type = CAMERA_TYPE
-    if camera_type == 'auto':
-        camera_type = detect_camera_type() or 'unknown'
+    actual_width = camera.get(cv2.CAP_PROP_FRAME_WIDTH) if camera else FRAME_WIDTH
+    actual_height = camera.get(cv2.CAP_PROP_FRAME_HEIGHT) if camera else FRAME_HEIGHT
+    actual_fps = camera.get(cv2.CAP_PROP_FPS) if camera else FPS
     
     return jsonify({
-        'width': FRAME_WIDTH,
-        'height': FRAME_HEIGHT,
-        'fps': FPS,
+        'width': int(actual_width),
+        'height': int(actual_height),
+        'fps': int(actual_fps),
         'quality': JPEG_QUALITY,
         'ip': get_local_ip(),
         'port': 5000,
-        'camera_type': camera_type
+        'camera_type': detect_camera_type(),
+        'camera_index': CAMERA_INDEX
     })
 
 @app.route('/video_feed')
 def video_feed():
-    """Route để stream video"""
+    """Route để stream video (MJPEG)"""
     return Response(
         generate_frames(),
         mimetype='multipart/x-mixed-replace; boundary=frame'
@@ -181,42 +130,49 @@ def main():
     """Khởi động server"""
     local_ip = get_local_ip()
     
-    # Auto-detect camera nếu cần
-    camera_type = CAMERA_TYPE
-    if camera_type == 'auto':
-        print("Đang tự động phát hiện camera...")
-        camera_type = detect_camera_type()
-        if not camera_type:
-            print("\n CẢNH BÁO: Không tìm thấy camera nào!")
-            print("Kiểm tra:")
-            print("  - Pi Camera: sudo modprobe bcm2835-v4l2")
-            print("  - USB Camera: ls /dev/video*")
-            print("\nServer sẽ khởi động nhưng không có video stream")
-        print()
+    print("=" * 60)
+    print("CAMERA WEB STREAMING SERVER - REAL-TIME")
+    print("=" * 60)
     
-    print("=" * 60)
-    print("RASPBERRY PI CAMERA WEB STREAMING SERVER")
-    print("=" * 60)
-    print(f"\nCamera: {camera_type if camera_type else 'Không phát hiện'}")
-    print(f"Địa chỉ truy cập:")
+    # Test camera
+    if init_camera():
+        actual_width = int(camera.get(cv2.CAP_PROP_FRAME_WIDTH))
+        actual_height = int(camera.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        actual_fps = int(camera.get(cv2.CAP_PROP_FPS))
+        
+        print(f"\n📹 Camera: {detect_camera_type().upper()}")
+        print(f"📍 Camera Index: {CAMERA_INDEX}")
+        print(f"📐 Độ phân giải: {actual_width}x{actual_height}")
+        print(f"🎞️  FPS: {actual_fps}")
+        print(f"🖼️  JPEG Quality: {JPEG_QUALITY}%")
+    else:
+        print("\n❌ CẢNH BÁO: Không tìm thấy camera!")
+        print("Kiểm tra:")
+        print("  - Webcam đã cắm chưa")
+        print("  - Thử đổi CAMERA_INDEX = 1 hoặc 2")
+        print("  - Pi Camera: sudo modprobe bcm2835-v4l2")
+        return
+    
+    print(f"\n🌐 Địa chỉ truy cập:")
     print(f"  - Local:  http://localhost:5000")
     print(f"  - LAN:    http://{local_ip}:5000")
-    print(f"\nCấu hình:")
-    print(f"  - Độ phân giải: {FRAME_WIDTH}x{FRAME_HEIGHT}")
-    print(f"  - FPS: {FPS}")
-    print(f"  - JPEG Quality: {JPEG_QUALITY}%")
-    print(f"\nĐộc lập hoàn toàn với các module điều khiển xe")
-    print(f"Chỉ dùng để xem camera qua web browser")
+    print(f"\n✨ Streaming real-time qua OpenCV (không delay)")
+    print(f"💡 Tương thích với mọi loại camera (USB/Pi Camera)")
     print("\nNhấn Ctrl+C để dừng server")
     print("=" * 60)
     print()
     
-    app.run(
-        host='0.0.0.0',  # Lắng nghe trên tất cả interfaces
-        port=5000,
-        debug=False,
-        threaded=True
-    )
+    try:
+        app.run(
+            host='0.0.0.0',
+            port=5000,
+            debug=False,
+            threaded=True
+        )
+    finally:
+        if camera:
+            camera.release()
+            print("\n✅ Đã đóng camera")
 
 if __name__ == "__main__":
     main()
