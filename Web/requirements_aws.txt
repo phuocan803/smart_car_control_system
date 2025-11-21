@@ -1,0 +1,3 @@
+# AWS-Enhanced Web Control Requirements
+boto3>=1.34.0
+pyserial==3.5
