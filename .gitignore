@@ -26,9 +26,10 @@ venv/
 ENV/
 env/
 
-# IDE
+# IDE & Editor Configs
 .vscode/
 .idea/
+.kiro/
 *.swp
 *.swo
 *~
@@ -39,11 +40,6 @@ env/
 
 # PyCharm
 *.iml
-.idea/
-
-# VS Code
-.vscode/
-*.code-workspace
 
 # Arduino
 *.hex
@@ -55,21 +51,20 @@ Thumbs.db
 Desktop.ini
 .DS_Store
 
-# Project specific
+# Project logs and temporary files
 *.log
 *.tmp
+nohup.out
 test_output/
 recordings/
+test_*.ps1
+test_*.sh
 
-# Byte-compiled / optimized / DLL files
-*.pyc
-*.pyo
-*.pyd
-
-# Distribution / packaging
-.Python
-pip-log.txt
-pip-delete-this-directory.txt
+# AWS credentials & keys
+.aws/
+*.pem
+credentials
+config
 
 # Unit test / coverage reports
 htmlcov/
