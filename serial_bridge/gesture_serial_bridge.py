@@ -8,9 +8,9 @@ import time
 import sys
 import os
 
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'Hand'))
-import hand as htm
-import UART
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'vision'))
+import hand_tracker as htm
+import serial_interface as UART
 
 COM_PORT = 'COM8'
 UART_BAUD = 9600

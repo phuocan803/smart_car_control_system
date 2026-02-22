@@ -97,7 +97,7 @@ def generate_frames():
 @app.route('/')
 def index():
     """Trang chính hiển thị video stream"""
-    html_path = os.path.join(os.path.dirname(__file__), 'web.html')
+    html_path = os.path.join(os.path.dirname(__file__), 'camera_view.html')
     return send_file(html_path)
 
 @app.route('/camera_info')

@@ -20,7 +20,7 @@ fi
 CURRENT_USER=${SUDO_USER:-$USER}
 CURRENT_DIR=$(pwd)
 VENV_PATH="$CURRENT_DIR/venv"
-SCRIPT_PATH="$CURRENT_DIR/Web/aws_web_control.py"
+SCRIPT_PATH="$CURRENT_DIR/web/cloud_server.py"
 
 echo "User: $CURRENT_USER"
 echo "Directory: $CURRENT_DIR"

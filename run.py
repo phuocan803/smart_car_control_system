@@ -41,38 +41,38 @@ def main():
     if choice == '1':
         print("\nMODE 1: Test Camera")
         print("Press 'q' in camera window to exit\n")
-        run_script("Hand/openCV.py")
+        run_script("vision/gesture_visualizer.py")
         
     elif choice == '2':
         print("\nMODE 2: OpenCV Mode")
-        print("Arduino: Upload Car/SmartCar.ino, select Mode [1]")
+        print("Arduino: Upload firmware/smart_car.ino, select Mode [1]")
         print("Press 'q' in camera window to exit\n")
         
         confirm = input("Is Arduino connected and ready? (y/n): ").strip().lower()
         if confirm == 'y':
-            run_script("UART/transfer_UART.py")
+            run_script("serial_bridge/gesture_serial_bridge.py")
         else:
             print("Cancelled!")
     
     elif choice == '3':
         print("\nMODE 3: Keyboard Mode")
-        print("Arduino: Upload Car/SmartCar.ino, select Mode [3]")
+        print("Arduino: Upload firmware/smart_car.ino, select Mode [3]")
         print("Press ESC to exit GUI\n")
         
         confirm = input("Is Arduino connected and ready? (y/n): ").strip().lower()
         if confirm == 'y':
-            run_script("Keyboard/keyboard_control.py")
+            run_script("keyboard/keyboard_controller.py")
         else:
             print("Cancelled!")
     
     elif choice == '4':
         print("\nMODE 4: Web Control (LAN)")
-        print("Arduino: Upload Car/SmartCar.ino, select Mode [3]")
+        print("Arduino: Upload firmware/smart_car.ino, select Mode [3]")
         print("Press Ctrl+C to exit\n")
         
         confirm = input("Is Arduino connected and ready? (y/n): ").strip().lower()
         if confirm == 'y':
-            run_script("Web/web_control.py")
+            run_script("web/local_server.py")
         else:
             print("Cancelled!")
     
@@ -84,9 +84,9 @@ def main():
         if confirm == 'y':
             test_mode = input("Run in simulation mode without Arduino? (y/n): ").strip().lower()
             if test_mode == 'y':
-                run_script("Web/aws_web_voice_control.py", "--test")
+                run_script("web/cloud_server.py", "--test")
             else:
-                run_script("Web/aws_web_voice_control.py")
+                run_script("web/cloud_server.py")
         else:
             print("Cancelled!")
     
@@ -100,11 +100,11 @@ def main():
         
         if mode == '1':
             print("\nSimulation Mode started. Monitoring command events from cloud server...")
-            run_script("Web/local_bridge_client.py", "--test")
+            run_script("web/cloud_bridge_client.py", "--test")
         elif mode == '2':
             confirm = input("\nIs Arduino connected and ready? (y/n): ").strip().lower()
             if confirm == 'y':
-                run_script("Web/local_bridge_client.py")
+                run_script("web/cloud_bridge_client.py")
             else:
                 print("Cancelled!")
         else:
@@ -113,7 +113,7 @@ def main():
     elif choice == '7':
         print("\nMODE 7: Voice Control (LangChain + OpenAI)")
         print("Recognizes spoken commands and processes natural language intent\n")
-        run_script("LangChain_test/Voice.py")
+        run_script("voice/voice_controller.py")
         
     elif choice == '0':
         print("\nExiting SmartCar Launcher. Goodbye!")

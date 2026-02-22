@@ -60,7 +60,7 @@ The **SmartCar Control System** provides a versatile control ecosystem designed 
 +-----------------------------------------------------------------------+
 |                          EMBEDDED HARDWARE                            |
 |  +-----------------------------------------------------------------+  |
-|  | Arduino Microcontroller (SmartCar.ino)                          |  |
+|  | Arduino Microcontroller (smart_car.ino)                         |  |
 |  +--------------------------------+--------------------------------+  |
 |                                   |                                   |
 |                                   v                                   |
@@ -76,43 +76,48 @@ The **SmartCar Control System** provides a versatile control ecosystem designed 
 
 ```text
 smart_car_control_system/
-├── Camera/                          # Video feed capture and streaming
-│   ├── web_camera.py               # Flask video streaming server
-│   ├── web.html                    # Web interface for camera feed
-│   ├── README_CAMERA.md            # Camera setup documentation
-│   └── requirements_pi.txt         # Camera module dependencies
-├── Car/                             # Microcontroller firmware and serial tests
-│   ├── SmartCar.ino                # Arduino C++ firmware (multi-mode interpreter)
-│   └── test_car.py                 # Standalone serial test utility
-├── Hand/                            # Computer Vision hand gesture processing
-│   ├── hand.py                     # MediaPipe hand detector & classifier
-│   └── openCV.py                   # Real-time gesture visualization script
-├── Keyboard/                        # Graphical desktop control
-│   └── keyboard_control.py         # Tkinter GUI keyboard controller
-├── LangChain_test/                  # AI voice control & LLM intent agent
-│   ├── Voice.py                    # Speech recognition & LangChain module
+├── camera/                           # Video feed capture and web streaming
+│   ├── camera_server.py            # Flask video streaming server
+│   ├── camera_view.html            # Web interface for camera feed
+│   ├── README.md                   # Camera setup documentation
+│   └── requirements_pi.txt         # Camera dependencies
+├── docs/                             # Project documentation and guides
+│   ├── AWS_DEPLOYMENT_GUIDE.md     # AWS EC2 deployment guide
+│   ├── VOICE_CONTROL_GUIDE.md      # Voice control architecture guide
+│   └── NOVA_SONIC_GUIDE.md         # Amazon Nova AI setup guide
+├── firmware/                         # Microcontroller firmware and motor tests
+│   ├── smart_car.ino               # Arduino C++ firmware (multi-mode interpreter)
+│   └── motor_test.py               # Standalone serial motor test utility
+├── keyboard/                         # Desktop GUI control
+│   └── keyboard_controller.py      # Tkinter GUI keyboard controller
+├── nginx/                            # Web server reverse proxy configuration
+│   └── smartcar_nginx.conf         # Nginx configuration file
+├── serial_bridge/                    # Serial UART bridge modules
+│   ├── serial_interface.py         # PySerial communication wrapper
+│   ├── gesture_serial_bridge.py    # Computer Vision to Arduino bridge
+│   └── hand_utils.py               # Hand tracking utility helpers
+├── vision/                           # Computer Vision hand gesture processing
+│   ├── hand_tracker.py             # MediaPipe hand detector & classifier
+│   └── gesture_visualizer.py       # Real-time gesture visualization script
+├── voice/                            # AI voice control & LLM intent agent
+│   ├── voice_controller.py         # Speech recognition & LangChain module
 │   ├── README.md                   # Voice control setup guide
 │   └── requirements.txt            # Speech & AI dependencies
-├── Test_Zigbee/                     # Wireless communication testing
-│   └── test.py                     # Serial communication test script
-├── UART/                            # Serial bridge modules
-│   ├── UART.py                     # PySerial communication wrapper
-│   ├── transfer_UART.py            # Computer Vision to Arduino bridge
-│   └── hand.py                     # Gesture detection utility functions
-├── Web/                             # Web servers, cloud APIs, and deployment
-│   ├── web_control.py              # Local LAN HTTP control server
-│   ├── web.html                    # Local web dashboard UI
-│   ├── aws_web_voice_control.py    # AWS EC2 cloud web & voice server
-│   ├── aws_web_voice.html          # Cloud voice control web interface
-│   ├── local_bridge_client.py      # Cloud-to-Arduino bridge client
+├── web/                              # Local & Cloud Web control servers
+│   ├── local_server.py             # Local LAN HTTP control server
+│   ├── local_dashboard.html        # Local web control interface UI
+│   ├── cloud_server.py             # AWS EC2 cloud web & voice server
+│   ├── cloud_dashboard.html        # Cloud voice control web interface UI
+│   ├── cloud_bridge_client.py      # Cloud-to-Arduino bridge client
 │   ├── deploy_ec2.sh               # AWS EC2 deployment automation script
-│   ├── setup_systemd.sh            # Systemd service setup script
-│   ├── README_AWS.md               # AWS deployment guide
+│   ├── setup_systemd.sh            # Systemd service installer script
 │   └── requirements_aws.txt        # Web server dependencies
+├── zigbee/                           # Wireless communication testing
+│   └── zigbee_serial_test.py       # Serial communication test script
 ├── .gitignore                       # Git exclusion rules
 ├── requirements.txt                 # Unified Python dependencies
 ├── run.py                           # Master system launcher CLI
-└── smartcar_nginx.conf              # Nginx reverse proxy configuration
+└── README.md                         # Main project documentation
 ```
 
 ---
@@ -151,10 +156,10 @@ pip install -r requirements.txt
 
 ### 2. Flash Microcontroller Firmware
 
-1. Open `Car/SmartCar.ino` in Arduino IDE.
+1. Open `firmware/smart_car.ino` in Arduino IDE.
 2. Connect your Arduino board via USB cable.
 3. Select your Board and Serial Port under the **Tools** menu.
-4. Upload `SmartCar.ino` to the board.
+4. Upload `smart_car.ino` to the board.
 5. Confirm serial baud rate is set to **9600**.
 
 ---
@@ -258,8 +263,8 @@ To deploy the web control portal on an AWS EC2 instance:
 1. Copy repository files to your AWS EC2 instance.
 2. Execute the automated deployment script:
    ```bash
-   cd Web
+   cd web
    bash deploy_ec2.sh
    ```
-3. Configure Nginx reverse proxy using `smartcar_nginx.conf`.
-4. Register and start systemd background services using `Web/setup_systemd.sh`.
+3. Configure Nginx reverse proxy using `nginx/smartcar_nginx.conf`.
+4. Register and start systemd background services using `web/setup_systemd.sh`.

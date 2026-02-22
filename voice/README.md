@@ -1,222 +1,70 @@
-# 🎤 Voice Control - LangChain + OpenAI
+# Voice Control - LangChain & OpenAI Integration
 
-Điều khiển SmartCar bằng giọng nói tiếng Việt sử dụng LangChain và OpenAI GPT.
+Natural language voice control system for smart vehicles using SpeechRecognition, OpenAI GPT models, and LangChain intent classification.
 
-## Tính năng
+---
 
-✅ **Nhận diện tiếng Việt** - Google Speech Recognition  
-✅ **LangChain + OpenAI** - Hiểu ngữ cảnh và biến thể lệnh  
-✅ **Fallback simple matching** - Không cần API key  
-✅ **Real-time control** - Gửi lệnh trực tiếp qua UART  
-✅ **Demo mode** - Test không cần Arduino  
+## Capabilities
 
-## Lệnh hỗ trợ
+- **Speech Recognition**: Google Speech Recognition integration for multi-lingual spoken command capture.
+- **Contextual Intent Classification**: LangChain and OpenAI GPT integration to understand variable phrasing and intent.
+- **Offline Fallback Parser**: Keyword matching algorithm requiring no external API keys.
+- **Real-Time Command Dispatch**: Direct UART serial transmission to vehicle microcontroller hardware.
+- **Simulation Mode**: Interactive demonstration mode for testing voice recognition without hardware serial links.
 
-| Lệnh | Các cách nói |
-|------|-------------|
-| **W** (Tiến) | tiến, đi thẳng, đi tới, về phía trước, forward |
-| **S** (Lùi) | lùi, đi lùi, quay lại, về sau, backward |
-| **A** (Trái) | trái, rẽ trái, queo trái, sang trái, left |
-| **D** (Phải) | phải, rẽ phải, queo phải, sang phải, right |
-| **X** (Dừng) | dừng, stop, đứng lại, ngừng, thôi |
+---
 
-## Cài đặt
+## Command Phrase Mapping
 
-### 1. Dependencies
+| Command Code | Action | Example Spoken Variations |
+|--------------|--------|---------------------------|
+| `W` | Move Forward | `"forward"`, `"go ahead"`, `"drive forward"`, `"tiến"` |
+| `S` | Move Reverse | `"reverse"`, `"move back"`, `"go backward"`, `"lùi"` |
+| `A` | Turn Left | `"left"`, `"turn left"`, `"steer left"`, `"trái"` |
+| `D` | Turn Right | `"right"`, `"turn right"`, `"steer right"`, `"phải"` |
+| `X` | Stop | `"stop"`, `"halt"`, `"brake"`, `"dừng"` |
+
+---
+
+## Installation & Setup
+
+### 1. Install Dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-**Lưu ý:** PyAudio cần compiler:
+Note: PyAudio requires native audio compiler libraries:
+- **Linux/Ubuntu**: `sudo apt install portaudio19-dev python3-pyaudio`
+- **macOS**: `brew install portaudio`
+- **Windows**: Download wheel binaries from PyAudio release pages.
 
-- **Windows:** Tải wheel từ [Unofficial Windows Binaries](https://www.lfd.uci.edu/~gohlke/pythonlibs/#pyaudio)
-- **Linux:** `sudo apt install portaudio19-dev python3-pyaudio`
-- **macOS:** `brew install portaudio`
+### 2. Configure OpenAI API Credentials
 
-### 2. OpenAI API Key
-
-Lấy API key từ [OpenAI Platform](https://platform.openai.com/api-keys)
-
-**Windows:**
-
-```cmd
-set OPENAI_API_KEY=sk-...your-key...
-```
-
-**Linux/macOS:**
+Set your API Key in your terminal environment:
 
 ```bash
-export OPENAI_API_KEY=sk-...your-key...
+export OPENAI_API_KEY="sk-...your-key..."
 ```
 
-**Hoặc tạo file `.env`:**
+---
 
-```
-OPENAI_API_KEY=sk-...your-key...
-```
+## Execution Modes
 
-### 3. Arduino
-
-```
-1. Upload Car/SmartCar.ino
-2. Mở Serial Monitor (9600 baud)
-3. Chọn [3] - Python Keyboard Mode
-```
-
-## Sử dụng
-
-### Mode 1: LangChain + OpenAI (Khuyến nghị)
+### Mode 1: LangChain + OpenAI Intent Parser (Recommended)
 
 ```bash
-python Voice.py
+python voice_controller.py
 ```
 
-- Hiểu ngữ cảnh tốt hơn
-- Xử lý biến thể câu phức tạp
-- Cần API key ($0.002/1K tokens)
-
-### Mode 2: Simple Matching (Miễn phí)
+### Mode 2: Simple Local Keyword Matcher (Offline Mode)
 
 ```bash
-python Voice.py --simple
+python voice_controller.py --simple
 ```
 
-- Không cần API key
-- Chỉ so khớp từ khóa
-- Nhanh hơn nhưng kém linh hoạt
-
-### Mode 3: Demo (Không cần Arduino)
+### Mode 3: Hardware Simulation Mode (No Serial Link)
 
 ```bash
-python Voice.py --demo
-```
-
-- Test nhận diện giọng nói
-- Không gửi lệnh serial
-- In lệnh ra console
-
-## Ví dụ
-
-**LangChain mode:**
-
-```
-🎤 Đang nghe...
-📝 Nghe được: 'xe đi về phía trước đi'
-✅ Lệnh: TIẾN (W)
-📤 Đã gửi lệnh [1]
-
-🎤 Đang nghe...
-📝 Nghe được: 'quay xe sang bên trái'
-✅ Lệnh: TRÁI (A)
-📤 Đã gửi lệnh [2]
-```
-
-**Simple matching mode:**
-
-```
-🎤 Đang nghe...
-📝 Nghe được: 'tiến'
-✅ Lệnh: TIẾN (W)
-📤 Đã gửi lệnh [1]
-```
-
-## Cấu hình
-
-Chỉnh sửa `Voice.py`:
-
-```python
-COM_PORT = 'COM8'           # COM port Arduino
-BAUD_RATE = 9600            # Baud rate
-OPENAI_API_KEY = '...'      # Hoặc dùng env variable
-
-# Thêm lệnh mới
-COMMANDS = {
-    'W': ['tiến', 'forward', 'thêm từ khóa...'],
-    # ...
-}
-```
-
-## Troubleshooting
-
-### Lỗi PyAudio
-
-```bash
-# Windows - Tải wheel phù hợp với Python version
-pip install PyAudio-0.2.14-cp310-cp310-win_amd64.whl
-
-# Ubuntu
-sudo apt install portaudio19-dev python3-pyaudio
-pip install pyaudio
-```
-
-### Microphone không hoạt động
-
-```python
-# Liệt kê microphones
-import speech_recognition as sr
-print(sr.Microphone.list_microphone_names())
-
-# Chọn microphone cụ thể (sửa trong Voice.py)
-self.microphone = sr.Microphone(device_index=1)
-```
-
-### Nhận diện kém chính xác
-
-- Tăng độ dài timeout: `listen(source, timeout=10)`
-- Giảm ambient noise trong phòng
-- Nói rõ ràng, gần mic
-- Dùng LangChain mode để hiểu ngữ cảnh
-
-### OpenAI API lỗi
-
-```bash
-# Kiểm tra API key
-echo %OPENAI_API_KEY%  # Windows
-echo $OPENAI_API_KEY   # Linux
-
-# Test API
-curl https://api.openai.com/v1/models \
-  -H "Authorization: Bearer $OPENAI_API_KEY"
-```
-
-### Không kết nối Arduino
-
-- Kiểm tra COM port: Device Manager (Windows)
-- Đổi `COM_PORT = 'COM8'` trong code
-- Chạy `--demo` mode để test nhận diện
-
-## Chi phí
-
-**OpenAI API:**
-
-- Model: GPT-3.5 Turbo
-- Input: $0.0015/1K tokens
-- Output: $0.002/1K tokens
-- Ước tính: ~5-10 tokens/lệnh = $0.00001/lệnh
-- **100 lệnh ≈ $0.001 (rất rẻ)**
-
-**Alternative miễn phí:**
-
-- Simple matching mode (`--simple`)
-- Hoặc dùng local LLM (Ollama, LLaMA)
-
-## So sánh modes
-
-| Feature | LangChain | Simple Matching |
-|---------|-----------|-----------------|
-| Chi phí | $0.00001/lệnh | Miễn phí |
-| Độ chính xác | 95%+ | 70-80% |
-| Ngữ cảnh | Hiểu tốt | Chỉ từ khóa |
-| Latency | ~1-2s | ~0.1s |
-| Internet | Cần | Không cần |
-
-## Tích hợp với run.py
-
-Thêm vào `run.py`:
-
-```python
-elif choice == '5':
-    print("\nMode 5: Voice Control")
-    subprocess.run([sys.executable, 'LangChain/Voice.py'])
+python voice_controller.py --demo
 ```

@@ -5,7 +5,7 @@ NGÀY: 19/11/2025
 """
 import cv2
 import time
-import hand as htm
+import hand_tracker as htm
 
 cap = cv2.VideoCapture(0)
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)

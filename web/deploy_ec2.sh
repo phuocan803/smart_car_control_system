@@ -132,7 +132,7 @@ echo "Step 8: Testing server..."
 echo -e "${YELLOW}Starting server in test mode for 5 seconds...${NC}"
 
 # Start server in background
-python3 Web/aws_web_control.py --test > /tmp/smartcar_test.log 2>&1 &
+python3 web/cloud_server.py --test > /tmp/smartcar_test.log 2>&1 &
 SERVER_PID=$!
 
 # Wait for server to start
@@ -173,7 +173,7 @@ echo "Next steps:"
 echo ""
 echo "1. Start server:"
 echo "   source venv/bin/activate"
-echo "   python3 Web/aws_web_control.py --test"
+echo "   python3 web/cloud_server.py --test"
 echo ""
 echo "2. Access web interface:"
 echo "   http://$PUBLIC_IP:8080"
@@ -198,5 +198,5 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo "Starting server..."
     echo "Press Ctrl+C to stop"
     echo ""
-    python3 Web/aws_web_control.py --test
+    python3 web/cloud_server.py --test
 fi
