@@ -1,6 +1,6 @@
 ﻿# SmartCar - Control System
 
-Hệ thống điều khiển xe thông minh với 4 chế độ: OpenCV, Keyboard GUI, Web Control, Manual.
+Hệ thống điều khiển xe thông minh với 5 chế độ: OpenCV, Keyboard GUI, Web Control (LAN), AWS Web Voice Control (Cloud), Manual.
 
 ---
 
@@ -25,7 +25,14 @@ Demo/
 │   └── requirements_pi.txt - Camera dependencies
 ├── Web/
 │   ├── web_control.py    - HTTP server for LAN control
-│   └── web.html          - Web control interface
+│   ├── web.html          - Web control interface
+│   ├── aws_web_voice_control.py - AWS cloud server with voice
+│   ├── aws_web_voice.html       - Voice control web interface
+│   ├── local_bridge_client.py   - Bridge: EC2 ↔ Arduino
+│   ├── deploy_ec2.sh     - AWS deployment script
+│   ├── setup_systemd.sh  - Systemd service setup
+│   ├── README_AWS.md     - AWS deployment guide
+│   └── requirements_aws.txt - AWS dependencies
 ├── Keyboard/
 │   └── keyboard_control.py - GUI keyboard control (Tkinter)
 ├── LangChain (test)/
@@ -72,7 +79,7 @@ pip install opencv-python==4.10.0.84 mediapipe==0.10.14 pyserial==3.5
 
 ---
 
-## 4 Chế độ điều khiển
+## 5 Chế độ điều khiển
 
 ### Mode 1: Test Camera
 
@@ -196,6 +203,141 @@ curl http://<IP>:8080/status # Trạng thái
 
 ---
 
+### Mode 5: AWS Web Voice Control
+
+Server AWS EC2 với điều khiển bằng giọng nói và natural language qua internet.
+
+**⚠️ LƯU Ý QUAN TRỌNG:**
+
+- **Server đã chạy sẵn trên EC2** → <https://voicecar.pngha.io.vn/>
+- **KHÔNG cần chạy Mode 5** để điều khiển xe
+- Mode 5 chỉ dành cho admin/developer test server local
+- **Để điều khiển xe**: Dùng **Mode 6 (Bridge Client)** + Mở browser
+
+**Đặc điểm:**
+
+- ✅ Host trên AWS EC2 (Singapore) - chạy 24/7
+- ✅ Truy cập từ bất kỳ đâu: <https://voicecar.pngha.io.vn/>
+- ✅ Voice input: Web Speech API (browser-based)
+- ✅ Natural language: "go forward", "turn left", "stop"...
+- ✅ Keyword matching (không cần AWS Bedrock)
+- ✅ Command history tracking
+
+**Kiến trúc:**
+
+```
+Browser (anywhere)
+    ↓ HTTPS
+EC2 Server (voicecar.pngha.io.vn) ← Server đã sẵn!
+    ↓ HTTP Polling  
+Bridge Client (Mode 6) ← Chạy cái này trên máy local!
+    ↓ Serial/Zigbee
+Arduino + SmartCar
+```
+
+**Cách sử dụng đúng:**
+
+1. **Upload SmartCar.ino** lên Arduino → Chọn Mode [3]
+2. **Chạy Mode 6** (Bridge Client) trên máy có Arduino:
+
+   ```bash
+   .venv/Scripts/python.exe run.py
+   # Chọn [6] - Bridge Client
+   # Chọn [2] - Arduino Mode
+   ```
+
+3. **Mở browser** bất kỳ đâu: <https://voicecar.pngha.io.vn/>
+4. **Điều khiển** bằng voice/button/keyboard
+
+**API Endpoints (cho developers):**
+
+- Keyboard (W/A/S/D/X)
+
+*API/curl:*
+
+```bash
+# Direct commands
+curl https://voicecar.pngha.io.vn/cmd/W
+curl https://voicecar.pngha.io.vn/cmd/A
+curl https://voicecar.pngha.io.vn/cmd/X
+
+# Natural language
+curl -X POST https://voicecar.pngha.io.vn/llm/parse \
+  -H "Content-Type: application/json" \
+  -d '{"text": "go forward", "source": "llm"}'
+
+# Status
+curl https://voicecar.pngha.io.vn/status
+```
+
+**Chạy server (trên EC2):**
+
+```bash
+cd Web
+python aws_web_voice_control.py --test  # Test mode
+# hoặc
+python aws_web_voice_control.py         # Arduino mode
+```
+
+---
+
+### Mode 6: Bridge Client
+
+Bridge client kết nối AWS EC2 server với Arduino local qua Zigbee/Serial.
+
+**Chức năng:**
+
+- Poll lệnh từ EC2 server (100ms interval)
+- Forward lệnh xuống Arduino qua Serial/Zigbee
+- Gửi lệnh liên tục như web_control.py
+- Hiển thị log mọi thay đổi lệnh
+
+**Workflow:**
+
+```
+Web Browser (anywhere)
+    ↓ HTTPS
+AWS EC2 Server (voicecar.pngha.io.vn)
+    ↓ HTTP Polling (100ms)
+Local Bridge Client (máy có Arduino)
+    ↓ Serial/Zigbee
+Arduino + SmartCar
+```
+
+**Sử dụng:**
+
+```bash
+# Qua run.py
+.venv/Scripts/python.exe run.py
+# Chọn [6] - Bridge Client
+# Chọn [1] - Test Mode (không cần Arduino)
+# hoặc [2] - Arduino Mode
+
+# Trực tiếp
+cd Web
+python local_bridge_client.py --test    # Test mode
+python local_bridge_client.py           # Arduino mode
+python local_bridge_client.py COM8      # Chỉ định COM port
+```
+
+**Yêu cầu:**
+
+- Arduino upload SmartCar.ino, chọn Mode [3]
+- Cài requests: `pip install requests`
+- Máy có internet để kết nối EC2
+
+**Output:**
+
+```
+[01:01:01] Lệnh mới: X → W (#175)  ← Forward
+[01:01:03] Lệnh mới: W → A (#182)  ← Left
+[01:01:07] Lệnh mới: A → D (#190)  ← Right
+[01:01:11] Lệnh mới: D → S (#195)  ← Backward
+[01:01:11] Lệnh mới: S → X (#196)  ← Stop
+```
+
+---
+
 ## Arduino Modes
 
 **SmartCar.ino có 3 modes:**
@@ -219,14 +361,19 @@ IN4 = 11  (Direction B2)
 
 ## So sánh các chế độ
 
-| Tính năng | Test Camera | OpenCV | Keyboard GUI | Web Control |
-|-----------|-------------|--------|--------------|-------------|
-| Cần Arduino | Không | Có | Có | Có |
-| Cần Camera | Có | Có | Không | Không |
-| Interface | OpenCV Window | OpenCV Window | Tkinter GUI | Browser |
-| Test Mode | N/A | Không | Có | Có |
-| Multi-user | Không | Không | Không | Có |
-| Use case | Test | Demo AI | Development | Remote Control |
+| Tính năng | Test Camera | OpenCV | Keyboard GUI | Web Control | AWS Voice | Bridge Client |
+|-----------|-------------|--------|--------------|-------------|-----------|---------------|
+| Cần Arduino | Không | Có | Có | Có | Không* | Có |
+| Cần Camera | Có | Có | Không | Không | Không | Không |
+| Interface | OpenCV | OpenCV | Tkinter GUI | Browser | Browser | Terminal |
+| Test Mode | N/A | Không | Có | Có | Có | Có |
+| Multi-user | Không | Không | Không | Có | Có | Có |
+| Voice Control | Không | Không | Không | Không | Có | N/A |
+| Natural Language | Không | Không | Không | Không | Có | N/A |
+| Remote Access | Không | Không | Không | LAN only | Internet | N/A |
+| Use case | Test | Demo AI | Development | LAN Control | Cloud Control | Bridge AWS→Arduino |
+
+*AWS Voice chạy trên EC2, cần Bridge Client để kết nối Arduino
 
 ---
 
@@ -304,6 +451,8 @@ SERVER_PORT = 8080
 
 ## Test nhanh
 
+**Test local (không cần internet):**
+
 ```bash
 # 1. Test camera (không cần Arduino)
 .venv/Scripts/python.exe run.py → [1]
@@ -311,9 +460,84 @@ SERVER_PORT = 8080
 # 2. Test keyboard GUI (không cần Arduino)
 .venv/Scripts/python.exe Keyboard/keyboard_control.py --test
 
-# 3. Test web server (không cần Arduino)
+# 3. Test web server LAN (không cần Arduino)
 .venv/Scripts/python.exe Web/web_control.py --test    
 
-# 4. Test với Arduino
+# 4. Test với Arduino (local)
 Upload SmartCar.ino → Chọn mode → .venv/Scripts/python.exe run.py
+```
+
+**Test AWS Cloud (cần internet):**
+
+```bash
+# 1. Test Bridge Client log (không cần Arduino)
+.venv/Scripts/python.exe run.py → [6] → [1]
+# Mở browser: https://voicecar.pngha.io.vn/ và điều khiển
+# Xem log hiển thị ở terminal
+
+# 2. Test điều khiển xe thật qua internet (cần Arduino)
+# Bước 1: Upload SmartCar.ino → Mode [3]
+# Bước 2: Chạy Bridge Client
+.venv/Scripts/python.exe run.py → [6] → [2]
+# Bước 3: Mở browser bất kỳ đâu: https://voicecar.pngha.io.vn/
+# Bước 4: Điều khiển bằng voice/button/keyboard
+
+# 3. Test AWS server local (dev only)
+python Web/aws_web_voice_control.py --test
+```
+
+**Quick test flow (recommended):**
+
+```
+1. run.py → [6] → [1]  (Test Bridge log)
+2. Mở https://voicecar.pngha.io.vn/
+3. Nhấn nút W/A/S/D/X
+4. Xem log hiển thị thay đổi lệnh
+```
+
+---
+
+## AWS Deployment
+
+**Server đã deploy tại:**
+
+- URL: <https://voicecar.pngha.io.vn/>
+- Region: AWS EC2 Singapore (ap-southeast-1)
+- Service: systemd auto-restart
+
+**Để deploy lại:**
+
+```bash
+cd Web
+./deploy_ec2.sh          # Deploy to EC2
+./setup_systemd.sh       # Setup systemd service
+```
+
+Chi tiết xem [Web/README_AWS.md](Web/README_AWS.md)
+
+---
+
+## Dependencies
+
+**Main (requirements.txt):**
+
+```
+opencv-python==4.10.0.84
+mediapipe==0.10.14
+pyserial==3.5
+```
+
+**AWS (Web/requirements_aws.txt):**
+
+```
+boto3
+pyserial
+requests
+```
+
+**Cài đặt:**
+
+```bash
+pip install -r requirements.txt
+pip install -r Web/requirements_aws.txt
 ```
