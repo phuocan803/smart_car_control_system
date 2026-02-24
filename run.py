@@ -17,11 +17,12 @@ def main():
     print("  [2] OpenCV Mode        - Dieu khien bang cu chi tay")
     print("  [3] Keyboard Mode      - Dieu khien bang phim GUI")
     print("  [4] Web Control        - Dieu khien qua LAN")
+    print("  [5] AWS Web Control    - Dieu khien AI (Amazon Nova Sonic 2)")
     print()
     print("  [0] Thoat")
     print()
     
-    choice = input("Nhap lua chon (0-4): ").strip()
+    choice = input("Nhap lua chon (0-5): ").strip()
     
     if choice == '1':
         print("\nCHE DO 1: Test Camera")
@@ -60,6 +61,18 @@ def main():
         confirm = input("Arduino da san sang? (y/n): ").strip().lower()
         if confirm == 'y':
             os.system(f'{sys.executable} Web/web_control.py')
+        else:
+            print("Huy bo!")
+    
+    elif choice == '5':
+        print("\nCHE DO 5: AWS Web Control (AI)")
+        print("Amazon Nova Sonic 2 - Natural Language Control")
+        print("Arduino: Upload SmartCar.ino, chon Mode [3]")
+        print("Nhan Ctrl+C de thoat\n")
+        
+        confirm = input("Arduino da san sang? (y/n): ").strip().lower()
+        if confirm == 'y':
+            os.system(f'{sys.executable} Web/aws_web_control.py')
         else:
             print("Huy bo!")
             
