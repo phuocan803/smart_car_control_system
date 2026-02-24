@@ -60,6 +60,15 @@ Desktop.ini
 *.tmp
 test_output/
 recordings/
+nohup.out
+test_*.ps1
+test_*.sh
+
+# AWS
+.aws/
+*.pem
+credentials
+config
 
 # Byte-compiled / optimized / DLL files
 *.pyc
