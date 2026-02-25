@@ -29,7 +29,6 @@ env/
 # IDE & Editor Configs
 .vscode/
 .idea/
-.kiro/
 *.swp
 *.swo
 *~

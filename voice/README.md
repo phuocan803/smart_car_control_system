@@ -18,11 +18,11 @@ Natural language voice control system for smart vehicles using SpeechRecognition
 
 | Command Code | Action | Example Spoken Variations |
 |--------------|--------|---------------------------|
-| `W` | Move Forward | `"forward"`, `"go ahead"`, `"drive forward"`, `"tiến"` |
-| `S` | Move Reverse | `"reverse"`, `"move back"`, `"go backward"`, `"lùi"` |
-| `A` | Turn Left | `"left"`, `"turn left"`, `"steer left"`, `"trái"` |
-| `D` | Turn Right | `"right"`, `"turn right"`, `"steer right"`, `"phải"` |
-| `X` | Stop | `"stop"`, `"halt"`, `"brake"`, `"dừng"` |
+| `W` | Move Forward | `"forward"`, `"go ahead"`, `"drive forward"`, `"move forward"` |
+| `S` | Move Reverse | `"reverse"`, `"move back"`, `"go backward"`, `"backward"` |
+| `A` | Turn Left | `"left"`, `"turn left"`, `"steer left"`, `"go left"` |
+| `D` | Turn Right | `"right"`, `"turn right"`, `"steer right"`, `"go right"` |
+| `X` | Stop | `"stop"`, `"halt"`, `"brake"`, `"emergency stop"` |
 
 ---
 

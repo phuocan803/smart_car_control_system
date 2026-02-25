@@ -1,10 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Voice.py - Voice Command Recognition for SmartCar using LangChain
-NGÀY: 20/11/2025
-
-Nhận diện giọng nói tiếng Việt để điều khiển xe
-Sử dụng: speech_recognition + LangChain + OpenAI
+voice_controller.py - Natural Language Voice Command Recognition for Smart Car using LangChain
 """
 import speech_recognition as sr
 import serial
@@ -15,22 +11,22 @@ from langchain.prompts import PromptTemplate
 from langchain.chains import LLMChain
 from langchain_openai import ChatOpenAI
 
-# Cấu hình
+# Configuration defaults
 COM_PORT = 'COM8'
 BAUD_RATE = 9600
-OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')  # Set trong environment variable
+OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 
-# Command mapping
+# Supported command dictionary
 COMMANDS = {
-    'W': ['tiến', 'đi thẳng', 'đi tới', 'về phía trước', 'forward'],
-    'S': ['lùi', 'đi lùi', 'quay lại', 'về sau', 'backward'],
-    'A': ['trái', 'rẽ trái', 'queo trái', 'sang trái', 'left'],
-    'D': ['phải', 'rẽ phải', 'queo phải', 'sang phải', 'right'],
-    'X': ['dừng', 'stop', 'đứng lại', 'ngừng', 'thôi']
+    'W': ['forward', 'go forward', 'drive ahead', 'move forward', 'ahead'],
+    'S': ['reverse', 'move back', 'go backward', 'backward', 'back'],
+    'A': ['left', 'turn left', 'steer left', 'go left'],
+    'D': ['right', 'turn right', 'steer right', 'go right'],
+    'X': ['stop', 'halt', 'brake', 'emergency stop']
 }
 
 def auto_detect_port():
-    """Tự động tìm COM port"""
+    """Auto-detect connected USB COM port."""
     import serial.tools.list_ports
     ports = list(serial.tools.list_ports.comports())
     
@@ -52,158 +48,140 @@ class VoiceController:
         self.current_command = 'X'
         self.command_count = 0
         
-        # LangChain setup
         if use_langchain and OPENAI_API_KEY:
             self.setup_langchain()
         else:
-            print("  Chế độ simple matching (không dùng LangChain)")
+            print("Using simple keyword matching mode (LangChain offline).")
             self.llm = None
         
-        # Calibrate microphone
         self.calibrate_microphone()
     
     def setup_langchain(self):
-        """Thiết lập LangChain với OpenAI"""
+        """Configure LangChain with OpenAI LLM model."""
         try:
-            # Khởi tạo LLM
             self.llm = ChatOpenAI(
                 model="gpt-3.5-turbo",
                 temperature=0,
                 openai_api_key=OPENAI_API_KEY
             )
             
-            # Prompt template
-            template = """Bạn là trợ lý nhận diện lệnh điều khiển xe thông minh.
+            template = """You are a smart vehicle voice command recognition agent.
 
-Các lệnh hợp lệ:
-- W: tiến, đi thẳng, đi tới, về phía trước, forward
-- S: lùi, đi lùi, quay lại, về sau, backward  
-- A: trái, rẽ trái, queo trái, sang trái, left
-- D: phải, rẽ phải, queo phải, sang phải, right
-- X: dừng, stop, đứng lại, ngừng, thôi
+Valid command codes:
+- W: forward, drive ahead, move forward, ahead
+- S: reverse, move back, backward, back
+- A: left, turn left, steer left, go left
+- D: right, turn right, steer right, go right
+- X: stop, halt, brake, emergency stop
 
-Người dùng nói: "{user_input}"
+User input: "{user_input}"
 
-Hãy trả về CHÍNH XÁC một trong các ký tự: W, S, A, D, X
-Nếu không rõ ràng, trả về X (dừng).
-Chỉ trả về MỘT ký tự, không giải thích.
+Return EXACTLY one character: W, S, A, D, or X.
+If ambiguous or unclear, return X (stop).
+Do not include any explanation.
 """
-            
             self.prompt = PromptTemplate(
                 input_variables=["user_input"],
                 template=template
             )
-            
             self.chain = LLMChain(llm=self.llm, prompt=self.prompt)
-            
-            print(" LangChain đã sẵn sàng (OpenAI GPT-3.5)")
+            print("LangChain AI Voice Agent initialized (OpenAI GPT-3.5).")
         
         except Exception as e:
-            print(f"  Lỗi khởi tạo LangChain: {e}")
-            print("Chuyển sang chế độ simple matching")
+            print(f"LangChain setup failed: {e}")
+            print("Falling back to simple keyword matching mode.")
             self.llm = None
     
     def calibrate_microphone(self):
-        """Hiệu chỉnh microphone với ambient noise"""
-        print("🎤 Đang hiệu chỉnh microphone...")
+        """Calibrate microphone for ambient background noise."""
+        print("Calibrating microphone for ambient noise...")
         with self.microphone as source:
             self.recognizer.adjust_for_ambient_noise(source, duration=2)
-        print(" Microphone đã sẵn sàng")
+        print("Microphone calibration complete.")
     
     def connect_arduino(self):
-        """Kết nối Arduino"""
+        """Establish serial connection to Arduino microcontroller."""
         try:
             port = COM_PORT if COM_PORT else auto_detect_port()
             if not port:
-                print(" Không tìm thấy COM port")
+                print("Error: Serial COM port not found.")
                 return False
             
-            print(f" Đang kết nối {port}...")
+            print(f"Connecting to serial port {port}...")
             self.ser = serial.Serial(port, BAUD_RATE, timeout=1)
             time.sleep(2)
             
-            # Chọn mode 3 (Python Keyboard Mode)
+            # Select Python Keyboard Mode on firmware
             self.ser.write(b'3')
             time.sleep(1)
             
-            # Clear buffer
+            # Flush buffer
             while self.ser.in_waiting > 0:
                 self.ser.readline()
             
             self.is_running = True
-            print(f" Đã kết nối {port}")
+            print(f"Connected to Arduino on port {port}.")
             return True
         
         except Exception as e:
-            print(f" Lỗi kết nối: {e}")
+            print(f"Serial connection error: {e}")
             return False
     
     def listen(self):
-        """Lắng nghe và nhận diện giọng nói"""
+        """Capture microphone input and transcribe speech to text."""
         try:
             with self.microphone as source:
-                print("\n🎤 Đang nghe... (nói lệnh)")
+                print("\nListening for voice command...")
                 audio = self.recognizer.listen(source, timeout=5, phrase_time_limit=3)
             
-            print(" Đang nhận diện...")
-            
-            # Nhận diện tiếng Việt
-            text = self.recognizer.recognize_google(audio, language='vi-VN')
-            print(f" Nghe được: '{text}'")
-            
+            print("Processing voice audio...")
+            text = self.recognizer.recognize_google(audio)
+            print(f"Transcribed audio text: '{text}'")
             return text.lower()
         
         except sr.WaitTimeoutError:
-            print("Timeout - không nghe thấy gì")
+            print("Listening timeout - no audio detected.")
             return None
-        
         except sr.UnknownValueError:
-            print("Không nhận diện được")
+            print("Speech recognition could not understand audio.")
             return None
-        
         except sr.RequestError as e:
-            print(f"Lỗi API: {e}")
+            print(f"Speech recognition service error: {e}")
             return None
     
     def parse_command_simple(self, text):
-        """Phân tích lệnh bằng simple matching"""
+        """Parse command using keyword matching."""
         if not text:
             return None
         
         text_lower = text.lower()
-        
-        # Kiểm tra từng command
         for cmd, keywords in COMMANDS.items():
             for keyword in keywords:
                 if keyword in text_lower:
                     return cmd
-        
         return None
     
     def parse_command_langchain(self, text):
-        """Phân tích lệnh bằng LangChain + OpenAI"""
+        """Parse command using LangChain LLM intent classification."""
         if not text or not self.llm:
             return self.parse_command_simple(text)
         
         try:
-            # Gọi LangChain
             result = self.chain.run(user_input=text)
-            
-            # Lấy ký tự đầu tiên (W/S/A/D/X)
             cmd = result.strip().upper()[0]
             
             if cmd in ['W', 'S', 'A', 'D', 'X']:
                 return cmd
             else:
-                print(f"LLM trả về không hợp lệ: {result}")
+                print(f"Invalid LLM response: {result}")
                 return self.parse_command_simple(text)
         
         except Exception as e:
-            print(f"Lỗi LangChain: {e}")
+            print(f"LangChain processing error: {e}")
             return self.parse_command_simple(text)
     
     def send_command(self, command):
-        """Gửi lệnh đến Arduino"""
+        """Transmit command character to Arduino over serial link."""
         if not self.is_running or not self.ser or not self.ser.is_open:
             return False
         
@@ -213,110 +191,95 @@ Chỉ trả về MỘT ký tự, không giải thích.
             self.command_count += 1
             return True
         except Exception as e:
-            print(f"Lỗi gửi lệnh: {e}")
+            print(f"Serial transmission error: {e}")
             return False
     
     def run(self):
-        """Chạy vòng lặp chính"""
+        """Main event loop for voice command controller."""
         print("\n" + "=" * 60)
-        print("SMARTCAR VOICE CONTROL - LANGCHAIN")
+        print("SMART CAR AI VOICE CONTROL SERVICE")
         print("=" * 60)
-        print(f"Mode: {'LangChain + OpenAI' if self.llm else 'Simple Matching'}")
-        print(f"Language: Tiếng Việt")
-        print(f"Commands: TIẾN | LÙI | TRÁI | PHẢI | DỪNG")
+        print(f"Mode: {'LangChain + OpenAI' if self.llm else 'Keyword Matcher'}")
+        print(f"Commands: FORWARD | REVERSE | LEFT | RIGHT | STOP")
         print("=" * 60)
         print()
         
         if not self.connect_arduino():
-            print("\n Chạy ở chế độ demo (không có Arduino)")
-            input("Nhấn Enter để bắt đầu...")
+            print("\nRunning in simulation mode (no serial hardware).")
+            input("Press Enter to begin...")
             self.is_running = True
         
-        print("\n Sẵn sàng nhận lệnh giọng nói!")
-        print("Nhấn Ctrl+C để thoát\n")
+        print("\nVoice control ready. Speak commands into your microphone.")
+        print("Press Ctrl+C to terminate.\n")
         
         try:
             while self.is_running:
-                # Lắng nghe
                 text = self.listen()
                 
                 if text:
-                    # Phân tích lệnh
                     if self.llm:
                         command = self.parse_command_langchain(text)
                     else:
                         command = self.parse_command_simple(text)
                     
                     if command:
-                        # Mapping tên lệnh
                         cmd_names = {
-                            'W': 'TIẾN',
-                            'S': 'LÙI', 
-                            'A': 'TRÁI',
-                            'D': 'PHẢI',
-                            'X': 'DỪNG'
+                            'W': 'FORWARD',
+                            'S': 'REVERSE',
+                            'A': 'LEFT',
+                            'D': 'RIGHT',
+                            'X': 'STOP'
                         }
+                        print(f"Action: {cmd_names[command]} ({command})")
                         
-                        print(f" Lệnh: {cmd_names[command]} ({command})")
-                        
-                        # Gửi lệnh
                         if self.ser:
                             self.send_command(command)
-                            print(f" Đã gửi lệnh [{self.command_count}]")
+                            print(f"Sent command #{self.command_count}")
                         else:
-                            print(f" Demo mode: {cmd_names[command]}")
+                            print(f"Simulation Mode: {cmd_names[command]}")
                     else:
-                        print(" Không nhận diện được lệnh -> Dừng")
+                        print("Unrecognized command -> Executing STOP")
                         if self.ser:
                             self.send_command('X')
         
         except KeyboardInterrupt:
-            print("\n\n Dừng chương trình...")
+            print("\nTerminating voice control service...")
         
         finally:
             self.cleanup()
     
     def cleanup(self):
-        """Dọn dẹp tài nguyên"""
+        """Release resources on termination."""
         if self.ser and self.ser.is_open:
-            print(" Gửi lệnh dừng...")
+            print("Transmitting stop command...")
             self.ser.write(b'X')
             time.sleep(0.2)
             self.ser.close()
-            print(" Đã đóng serial")
+            print("Serial connection closed.")
         
-        print(f"\n Tổng số lệnh: {self.command_count}")
-        print("👋 Tạm biệt!")
-
+        print(f"\nTotal commands dispatched: {self.command_count}")
+        print("Service stopped cleanly.")
 
 def main():
-    """Main function"""
     import argparse
     
-    parser = argparse.ArgumentParser(description='SmartCar Voice Control')
+    parser = argparse.ArgumentParser(description='Smart Car AI Voice Controller')
     parser.add_argument('--simple', action='store_true', 
-                       help='Dùng simple matching (không cần OpenAI API)')
+                       help='Use simple keyword matching without OpenAI API')
     parser.add_argument('--demo', action='store_true',
-                       help='Chế độ demo (không cần Arduino)')
+                       help='Run in demonstration mode without serial hardware')
     
     args = parser.parse_args()
     
-    # Kiểm tra API key nếu dùng LangChain
     use_langchain = not args.simple
     if use_langchain and not OPENAI_API_KEY:
-        print(" Không tìm thấy OPENAI_API_KEY")
-        print("Set environment variable:")
-        print("  Windows: set OPENAI_API_KEY=your-api-key")
-        print("  Linux: export OPENAI_API_KEY=your-api-key")
-        print("\nChuyển sang chế độ simple matching...\n")
+        print("Environment variable OPENAI_API_KEY not found.")
+        print("To enable LangChain AI mode, export OPENAI_API_KEY=your-api-key")
+        print("Defaulting to simple keyword matching mode...\n")
         use_langchain = False
     
-    # Khởi tạo controller
     controller = VoiceController(use_langchain=use_langchain)
-    
-    # Chạy
     controller.run()
-
 
 if __name__ == "__main__":
     main()

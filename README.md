@@ -1,4 +1,4 @@
-# SmartCar Control System
+# Smart Car Control System
 
 An integrated, multi-modal control platform for autonomous and remote-controlled robotic vehicles. The system combines Computer Vision (OpenCV & MediaPipe), Graphical User Interfaces, Local Network Web Control, AWS Cloud Infrastructure, and AI-driven Natural Language Processing (LangChain & OpenAI).
 
@@ -9,15 +9,15 @@ An integrated, multi-modal control platform for autonomous and remote-controlled
 - **Phase 1 (NetSecTour 2025)**: Initial vehicle control modules (Computer Vision hand gesture detection, desktop Tkinter keyboard GUI, local LAN web server, and serial hardware bridge) were originally developed for **NetSecTour 2025** without AI voice capabilities.
 - **Phase 2 (Amazon Nova AI Hackathon)**: The system was expanded with Amazon Nova AI speech integration, LangChain natural language processing, AWS EC2 cloud infrastructure, and a local bridge client for submission to the **Amazon Nova AI Hackathon**.
 - **Awards & Recognition**:
-  - **Top 100 Student Team (Project)** — Amazon Nova AI Hackathon
-  - **Feedback Prize Winner** — 1 of 60 Global Cash Prize Winners ($50 Cash Prize)
-  - **Devpost Project Page**: [Smart Voice-Controlled Car on Devpost](https://devpost.com/software/smart-voice-controlled-car)
+  - **Feedback Prize Winner** — 1 of 60 Global Cash Prize Winners
+  - **Official Student Project** — 1 of 102 Global Student Entries (Amazon Nova AI Hackathon)
+  - **Devpost Project Page**: [NovaDrive: AI Voice-Controlled Smart Car on Devpost](https://devpost.com/software/smart-voice-controlled-car)
 
 ---
 
 ## System Overview
 
-The **SmartCar Control System** provides a versatile control ecosystem designed to bridge high-level software interfaces with low-level embedded hardware. The platform supports seven distinct control modes ranging from direct hardware testing to cloud-assisted voice navigation.
+The **Smart Car Control System** provides a versatile control ecosystem designed to bridge high-level software interfaces with low-level embedded hardware. The platform supports seven distinct control modes ranging from direct hardware testing to cloud-assisted voice navigation.
 
 ### Key Capabilities
 
@@ -55,12 +55,13 @@ The **SmartCar Control System** provides a versatile control ecosystem designed 
 |                       | (PySerial @ 9600) |                           |
 |                       +---------+---------+                           |
 +---------------------------------|-------------------------------------+
-                                  | USB Serial (/dev/ttyUSB0 or COM3)
+                                  | USB Serial / Zigbee Wireless Module
+                                  | (/dev/ttyUSB0 or COM3 @ 9600 Baud)
                                   v
 +-----------------------------------------------------------------------+
 |                          EMBEDDED HARDWARE                            |
 |  +-----------------------------------------------------------------+  |
-|  | Arduino Microcontroller (smart_car.ino)                         |  |
+|  | Zigbee Receiver -> Arduino Microcontroller (smart_car.ino)      |  |
 |  +--------------------------------+--------------------------------+  |
 |                                   |                                   |
 |                                   v                                   |
@@ -129,6 +130,7 @@ smart_car_control_system/
 | Component | Specification | Function |
 |-----------|---------------|----------|
 | **Microcontroller** | Arduino Uno / Mega / Nano | Real-time motor PWM control and safety timeouts |
+| **Wireless Module** | Zigbee Transceiver Pair (USB Adapter & Receiver) | Wireless serial telemetry link between host PC/Pi and Arduino |
 | **Motor Driver** | L298N Dual H-Bridge Driver | Power amplification for DC motors |
 | **Drive Motors** | 2x 5V-12V DC Gear Motors | Left and Right wheel propulsion |
 | **Camera** | USB Webcam / Raspberry Pi Camera | 720p/1080p video feed for gesture analysis |
@@ -154,13 +156,14 @@ cd smart_car_control_system
 pip install -r requirements.txt
 ```
 
-### 2. Flash Microcontroller Firmware
+### 2. Flash Microcontroller Firmware & Connect Zigbee Transceiver
 
 1. Open `firmware/smart_car.ino` in Arduino IDE.
 2. Connect your Arduino board via USB cable.
 3. Select your Board and Serial Port under the **Tools** menu.
 4. Upload `smart_car.ino` to the board.
-5. Confirm serial baud rate is set to **9600**.
+5. Connect the Zigbee receiver module to the Arduino RX/TX pins.
+6. Plug the Zigbee USB transceiver adapter into your host PC or Raspberry Pi (appearing as `/dev/ttyUSB0` or `COM3`).
 
 ---
 
@@ -187,7 +190,7 @@ python3 run.py  # Select Option [1]
 - **RIGHT (`D`)**: Left hand raised higher than right hand by more than 80 pixels.
 
 ### Mode 2: OpenCV Gesture Control
-Translates real-time camera gesture recognition into serial control codes sent to the vehicle hardware.
+Translates real-time camera gesture recognition into wireless Zigbee serial control codes sent to the vehicle hardware.
 
 ```bash
 python3 run.py  # Select Option [2]
@@ -215,7 +218,7 @@ python3 run.py  # Select Option [5]
 ```
 
 ### Mode 6: AWS Cloud Bridge Client
-Connects the local Arduino serial interface to a remote AWS EC2 cloud instance, enabling remote vehicle control from anywhere over the internet.
+Connects the local Zigbee wireless serial interface to a remote AWS EC2 cloud instance, enabling remote vehicle control from anywhere over the internet.
 
 ```bash
 python3 run.py  # Select Option [6]
@@ -232,7 +235,9 @@ python3 run.py  # Select Option [7]
 
 ## API & Serial Communication Protocol
 
-### Serial Command Protocol (PySerial @ 9600 Baud)
+### Serial Command Protocol (PySerial over Zigbee Wireless @ 9600 Baud)
+
+Communication between host Python scripts and the vehicle Arduino operates over a wireless Zigbee serial bridge connected to the host PC via USB adapter (`/dev/ttyUSB0` or `COM3`) at **9600 baud rate**:
 
 | Command Character | Description | Vehicle Action |
 |-------------------|-------------|----------------|
@@ -256,7 +261,7 @@ python3 run.py  # Select Option [7]
 
 ---
 
-## AWS Cloud Deployment
+## AWS Deployment
 
 To deploy the web control portal on an AWS EC2 instance:
 

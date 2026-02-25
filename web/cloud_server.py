@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-aws_web_voice_control.py - SmartCar AWS Voice Control Server
+aws_web_voice_control.py - Smart Car AWS Voice Control Server
 DATE: 24/02/2026
 Voice input/output with Amazon Polly and Web Speech API
 """
@@ -125,7 +125,7 @@ class AWSBedrockLLM:
         # If LLM is available, try using it
         if self.available:
             try:
-                system_prompt = """You are a SmartCar command parser. Convert natural language to car commands.
+                system_prompt = """You are a Smart Car command parser. Convert natural language to car commands.
 
 Available commands:
 - W: Move forward (go forward, move ahead, drive forward)
@@ -479,14 +479,14 @@ def main(test_mode=False, enable_llm=True):
     global controller
     
     print("=" * 70)
-    print("SMARTCAR AWS VOICE CONTROL SERVER")
+    print("SMART CAR AWS VOICE CONTROL SERVER")
     print("Web Speech API - Voice Recognition with Keyword Matching")
     print("=" * 70)
     
-    controller = SmartCarController(test_mode=test_mode, enable_llm=enable_llm)
+    controller = Smart CarController(test_mode=test_mode, enable_llm=enable_llm)
     
     local_ip = get_local_ip()
-    server = HTTPServer(('0.0.0.0', SERVER_PORT), SmartCarRequestHandler)
+    server = HTTPServer(('0.0.0.0', SERVER_PORT), Smart CarRequestHandler)
     
     print(f"\n✓ Server running at:")
     print(f"  - Local:  http://localhost:{SERVER_PORT}")

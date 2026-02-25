@@ -1,12 +1,12 @@
-# SmartCar AWS Cloud Control Deployment Guide
+# Smart Car AWS Cloud Control Deployment Guide
 
-Complete setup and operational guide for running the SmartCar Cloud Control Server on AWS EC2 with Amazon Bedrock AI integration.
+Complete setup and operational guide for running the Smart Car Cloud Control Server on AWS EC2 with Amazon Bedrock AI integration.
 
 ---
 
 ## Overview
 
-The SmartCar AWS Cloud Control service enables vehicle operation over local network (LAN) and global internet connections. It bridges web clients with embedded microcontrollers while utilizing AI foundation models for natural language intent processing.
+The Smart Car AWS Cloud Control service enables vehicle operation over local network (LAN) and global internet connections. It bridges web clients with embedded microcontrollers while utilizing AI foundation models for natural language intent processing.
 
 ### Key Features
 

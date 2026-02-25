@@ -1,18 +1,17 @@
 /*
- * SmartCar - Triple Mode Control System
- * NGÀY: 19/11/2025
+ * Smart Car - Triple Mode Control System Firmware
  *
  * MODE 1: OpenCV Hand Gesture Control
- *   - Nhận lệnh X/W/S/A/D từ Python OpenCV
- *   - X=Dừng, W=Tiến, S=Lùi, A=Trái, D=Phải
+ *   - Receives command codes (X/W/S/A/D) from Python Computer Vision
+ *   - X=Stop, W=Forward, S=Reverse, A=Left, D=Right
  *
  * MODE 2: Manual Keyboard Control (Serial Monitor)
- *   - Điều khiển trực tiếp W/A/S/D/X qua Serial Monitor
- *   - Hỗ trợ điều chỉnh tốc độ (1/2/3)
+ *   - Direct keyboard control via Serial Monitor (W/A/S/D/X)
+ *   - Supports speed selection levels (1/2/3)
  *
- * MODE 3: Python Keyboard Control
- *   - Nhận lệnh W/A/S/D/X từ Python script
- *   - Điều khiển thời gian thực không có menu tốc độ
+ * MODE 3: Python Controller Mode
+ *   - Receives high-speed command codes (W/A/S/D/X) from Python scripts
+ *   - Real-time continuous execution with safety auto-stop timeout
  */
 
 // Motor driver pins (L298N)
@@ -28,18 +27,16 @@
 #define DEFAULT_SPEED 180
 #define FAST_SPEED 250
 
-// Global variables
-int operationMode = 0; // 0=Not selected, 1=OpenCV, 2=Manual, 3=Python Keyboard
+// Global state variables
+int operationMode = 0; // 0=Not selected, 1=OpenCV, 2=Manual, 3=Python Controller
 int currentSpeed = DEFAULT_SPEED;
 char currentCommand = 'X';
 unsigned long lastCommandTime = 0;
 
 void setup()
 {
-  // Initialize Serial communication
   Serial.begin(9600);
 
-  // Configure motor pins as outputs
   pinMode(IN1, OUTPUT);
   pinMode(IN2, OUTPUT);
   pinMode(IN3, OUTPUT);
@@ -47,16 +44,12 @@ void setup()
   pinMode(ENA, OUTPUT);
   pinMode(ENB, OUTPUT);
 
-  // Start with motors stopped
   stopMotors();
-
-  // Display mode selection menu
   printModeSelectionMenu();
 }
 
 void loop()
 {
-  // If mode not selected yet, wait for mode selection
   if (operationMode == 0)
   {
     if (Serial.available() > 0)
@@ -66,38 +59,35 @@ void loop()
       if (input == '1')
       {
         operationMode = 1;
-        Serial.println("\n>>> CHON CHE DO 1: OpenCV Hand Gesture Control");
-        Serial.println("Waiting for commands from Python...");
-        Serial.println("Commands: X=Stop | W=Forward | S=Backward | A=Left | D=Right\n");
+        Serial.println("\n>>> SELECTED MODE 1: OpenCV Hand Gesture Control");
+        Serial.println("Waiting for command stream from Python vision module...");
+        Serial.println("Command Codes: X=Stop | W=Forward | S=Reverse | A=Left | D=Right\n");
       }
       else if (input == '2')
       {
         operationMode = 2;
-        Serial.println("\n>>> CHON CHE DO 2: Manual Keyboard Control");
+        Serial.println("\n>>> SELECTED MODE 2: Manual Keyboard Control");
         printManualControlMenu();
       }
       else if (input == '3')
       {
         operationMode = 3;
-        Serial.println("\n>>> CHON CHE DO 3: Python Keyboard Control");
-        Serial.println("Waiting for keyboard commands from Python...");
-        Serial.println("Commands: W=Forward | S=Backward | A=Left | D=Right | X=Stop\n");
+        Serial.println("\n>>> SELECTED MODE 3: Python Controller Mode");
+        Serial.println("Waiting for control commands from Python launcher...");
+        Serial.println("Command Codes: W=Forward | S=Reverse | A=Left | D=Right | X=Stop\n");
       }
     }
     return;
   }
 
-  // Mode 1: OpenCV Hand Gesture Control
   if (operationMode == 1)
   {
     loopOpenCVMode();
   }
-  // Mode 2: Manual Keyboard Control
   else if (operationMode == 2)
   {
     loopManualMode();
   }
-  // Mode 3: Python Keyboard Control
   else if (operationMode == 3)
   {
     loopPythonKeyboardMode();
@@ -107,35 +97,32 @@ void loop()
 // ====================== MODE SELECTION MENU ======================
 void printModeSelectionMenu()
 {
-  Serial.println("\n╔═══════════════════════════════════════════════════════════╗");
-  Serial.println("║           SMARTCAR - DUAL MODE CONTROL SYSTEM           ║");
-  Serial.println("║                   NT106.Q14.2_GROUP2                    ║");
-  Serial.println("╚═══════════════════════════════════════════════════════════╝");
-  Serial.println("\nCHON CHE DO HOAT DONG:");
+  Serial.println("\n===========================================================");
+  Serial.println("          SMART CAR - MULTI-MODAL VEHICLE CONTROLLER         ");
+  Serial.println("===========================================================");
+  Serial.println("\nSELECT OPERATIONAL MODE:");
   Serial.println("  [1] OpenCV Hand Gesture Control");
-  Serial.println("      → Dieu khien bang cu chi tay (AI)");
-  Serial.println("      → Can chay Python script: transfer_UART.py");
+  Serial.println("      -> Computer Vision Gesture Navigation (AI)");
+  Serial.println("      -> Requires running: python3 serial_bridge/gesture_serial_bridge.py");
   Serial.println();
   Serial.println("  [2] Manual Keyboard Control");
-  Serial.println("      → Dieu khien bang phim W/A/S/D/X");
-  Serial.println("      → Dieu chinh toc do bang phim 1/2/3");
+  Serial.println("      -> Direct keyboard control via W/A/S/D/X");
+  Serial.println("      -> Adjustable speed levels via 1/2/3");
   Serial.println();
-  Serial.println("  [3] Python Keyboard Control");
-  Serial.println("      → Dieu khien bang phim W/A/S/D/X tu Python");
-  Serial.println("      → Toc do co dinh, khong co menu");
+  Serial.println("  [3] Python Controller Mode");
+  Serial.println("      -> High-speed control from Python host scripts");
+  Serial.println("      -> Fixed speed rate with active safety timeout");
   Serial.println();
-  Serial.print("Nhap lua chon (1, 2 hoac 3): ");
+  Serial.print("Enter choice (1, 2, or 3): ");
 }
 
 // ====================== MODE 1: OpenCV Control ======================
 void loopOpenCVMode()
 {
-  // Read command from Serial (sent by Python OpenCV)
   if (Serial.available() > 0)
   {
     char command = Serial.read();
 
-    // Only process valid OpenCV commands
     if (command == 'X' || command == 'W' || command == 'S' ||
         command == 'A' || command == 'D')
     {
@@ -144,211 +131,148 @@ void loopOpenCVMode()
     }
   }
 
-  // Safety: Auto-stop if no command received for 2 seconds
   if (millis() - lastCommandTime > 2000)
   {
     currentCommand = 'X';
   }
 
-  // Execute current command with fixed OpenCV speed
-  executeCommand(currentCommand, DEFAULT_SPEED);
+  executeCommand(currentCommand);
+  delay(50);
 }
 
 // ====================== MODE 2: Manual Control ======================
-void loopManualMode()
-{
-  // Read command from Serial (keyboard input)
-  if (Serial.available() > 0)
-  {
-    char command = Serial.read();
-
-    // Process movement commands
-    if (command == 'W' || command == 'w')
-    {
-      currentCommand = 'W';
-      Serial.println(">>> TIEN");
-    }
-    else if (command == 'S' || command == 's')
-    {
-      currentCommand = 'S';
-      Serial.println(">>> LUI");
-    }
-    else if (command == 'A' || command == 'a')
-    {
-      currentCommand = 'A';
-      Serial.println(">>> TRAI");
-    }
-    else if (command == 'D' || command == 'd')
-    {
-      currentCommand = 'D';
-      Serial.println(">>> PHAI");
-    }
-    else if (command == 'X' || command == 'x' || command == ' ')
-    {
-      currentCommand = 'X';
-      Serial.println(">>> DUNG");
-    }
-    // Speed control
-    else if (command == '1')
-    {
-      currentSpeed = SLOW_SPEED;
-      Serial.print("Toc do: CHAM (");
-      Serial.print(currentSpeed);
-      Serial.println(")");
-    }
-    else if (command == '2')
-    {
-      currentSpeed = DEFAULT_SPEED;
-      Serial.print("Toc do: TRUNG BINH (");
-      Serial.print(currentSpeed);
-      Serial.println(")");
-    }
-    else if (command == '3')
-    {
-      currentSpeed = FAST_SPEED;
-      Serial.print("Toc do: NHANH (");
-      Serial.print(currentSpeed);
-      Serial.println(")");
-    }
-    // Help menu
-    else if (command == 'H' || command == 'h' || command == '?')
-    {
-      printManualControlMenu();
-    }
-  }
-
-  // Execute current command with user-selected speed
-  executeCommand(currentCommand, currentSpeed);
-}
-
 void printManualControlMenu()
 {
-  Serial.println("\n========================================");
-  Serial.println("   MANUAL CONTROL - HUONG DAN");
-  Serial.println("========================================");
-  Serial.println("DIEU KHIEN:");
-  Serial.println("  W/w - Tien");
-  Serial.println("  S/s - Lui");
-  Serial.println("  A/a - Trai");
-  Serial.println("  D/d - Phai");
-  Serial.println("  X/x/Space - Dung");
-  Serial.println("\nTOC DO:");
-  Serial.println("  1 - Cham (120)");
-  Serial.println("  2 - Trung binh (180)");
-  Serial.println("  3 - Nhanh (250)");
-  Serial.println("\nKHAC:");
-  Serial.println("  H/h/? - Hien thi menu");
-  Serial.println("========================================");
-  Serial.print("Toc do hien tai: ");
-  Serial.println(currentSpeed);
-  Serial.println("San sang nhan lenh...\n");
+  Serial.println("\n===========================================================");
+  Serial.println("              MANUAL SERIAL KEYBOARD CONTROL MENU          ");
+  Serial.println("===========================================================");
+  Serial.println("  W: Move Forward");
+  Serial.println("  S: Move Reverse");
+  Serial.println("  A: Turn Left");
+  Serial.println("  D: Turn Right");
+  Serial.println("  X: Emergency Stop");
+  Serial.println();
+  Serial.println("SPEED SELECTION:");
+  Serial.println("  1: Slow Speed    (120)");
+  Serial.println("  2: Normal Speed  (180)");
+  Serial.println("  3: Fast Speed    (250)");
+  Serial.println("===========================================================");
 }
 
-// ====================== MODE 3: Python Keyboard Control ======================
+void loopManualMode()
+{
+  if (Serial.available() > 0)
+  {
+    char input = Serial.read();
+    input = toupper(input);
+
+    if (input == '1')
+    {
+      currentSpeed = SLOW_SPEED;
+      Serial.println("Speed set to SLOW (120)");
+    }
+    else if (input == '2')
+    {
+      currentSpeed = DEFAULT_SPEED;
+      Serial.println("Speed set to NORMAL (180)");
+    }
+    else if (input == '3')
+    {
+      currentSpeed = FAST_SPEED;
+      Serial.println("Speed set to FAST (250)");
+    }
+    else if (input == 'W' || input == 'S' || input == 'A' ||
+             input == 'D' || input == 'X')
+    {
+      executeCommand(input);
+      Serial.print("Executed Command: ");
+      Serial.println(input);
+    }
+  }
+}
+
+// ====================== MODE 3: Python Controller Mode ======================
 void loopPythonKeyboardMode()
 {
-  // Read command from Serial (sent by Python keyboard script)
   if (Serial.available() > 0)
   {
     char command = Serial.read();
 
-    // Process movement commands (uppercase only for simplicity)
-    if (command == 'W')
+    if (command == 'X' || command == 'W' || command == 'S' ||
+        command == 'A' || command == 'D')
     {
-      currentCommand = 'W';
-    }
-    else if (command == 'S')
-    {
-      currentCommand = 'S';
-    }
-    else if (command == 'A')
-    {
-      currentCommand = 'A';
-    }
-    else if (command == 'D')
-    {
-      currentCommand = 'D';
-    }
-    else if (command == 'X')
-    {
-      currentCommand = 'X';
+      currentCommand = command;
+      lastCommandTime = millis();
+      executeCommand(command);
     }
   }
 
-  // Execute current command with default speed
-  executeCommand(currentCommand, DEFAULT_SPEED);
+  if (millis() - lastCommandTime > 500)
+  {
+    stopMotors();
+  }
 }
 
-// ====================== MOTOR CONTROL FUNCTIONS ======================
-void executeCommand(char cmd, int speed)
+// ====================== MOTOR DRIVER CONTROLS ======================
+void executeCommand(char cmd)
 {
   switch (cmd)
   {
-  case 'W': // Forward
-    moveForward(speed);
-    break;
-
-  case 'S': // Backward
-    moveBackward(speed);
-    break;
-
-  case 'A': // Left
-    turnLeft(speed);
-    break;
-
-  case 'D': // Right
-    turnRight(speed);
-    break;
-
-  case 'X': // Stop
-  default:
-    stopMotors();
-    break;
+    case 'W': moveForward(); break;
+    case 'S': moveReverse(); break;
+    case 'A': turnLeft(); break;
+    case 'D': turnRight(); break;
+    case 'X': stopMotors(); break;
+    default: stopMotors(); break;
   }
 }
 
-void moveForward(int speed)
+void moveForward()
 {
-  analogWrite(ENA, speed);
-  analogWrite(ENB, speed);
-  digitalWrite(IN1, HIGH);
-  digitalWrite(IN2, LOW);
-  digitalWrite(IN3, LOW);
-  digitalWrite(IN4, HIGH);
-}
-
-void moveBackward(int speed)
-{
-  analogWrite(ENA, speed);
-  analogWrite(ENB, speed);
-  digitalWrite(IN1, LOW);
-  digitalWrite(IN2, HIGH);
-  digitalWrite(IN3, HIGH);
-  digitalWrite(IN4, LOW);
-}
-
-void turnLeft(int speed)
-{
-  analogWrite(ENA, speed);
-  analogWrite(ENB, speed);
-  digitalWrite(IN1, LOW);
-  digitalWrite(IN2, HIGH);
-  digitalWrite(IN3, LOW);
-  digitalWrite(IN4, HIGH);
-}
-
-void turnRight(int speed)
-{
-  analogWrite(ENA, speed);
-  analogWrite(ENB, speed);
   digitalWrite(IN1, HIGH);
   digitalWrite(IN2, LOW);
   digitalWrite(IN3, HIGH);
   digitalWrite(IN4, LOW);
+  analogWrite(ENA, currentSpeed);
+  analogWrite(ENB, currentSpeed);
+}
+
+void moveReverse()
+{
+  digitalWrite(IN1, LOW);
+  digitalWrite(IN2, HIGH);
+  digitalWrite(IN3, LOW);
+  digitalWrite(IN4, HIGH);
+  analogWrite(ENA, currentSpeed);
+  analogWrite(ENB, currentSpeed);
+}
+
+void turnLeft()
+{
+  digitalWrite(IN1, LOW);
+  digitalWrite(IN2, HIGH);
+  digitalWrite(IN3, HIGH);
+  digitalWrite(IN4, LOW);
+  analogWrite(ENA, currentSpeed);
+  analogWrite(ENB, currentSpeed);
+}
+
+void turnRight()
+{
+  digitalWrite(IN1, HIGH);
+  digitalWrite(IN2, LOW);
+  digitalWrite(IN3, LOW);
+  digitalWrite(IN4, HIGH);
+  analogWrite(ENA, currentSpeed);
+  analogWrite(ENB, currentSpeed);
 }
 
 void stopMotors()
 {
-  digitalWrite(ENA, LOW);
-  digitalWrite(ENB, LOW);
+  digitalWrite(IN1, LOW);
+  digitalWrite(IN2, LOW);
+  digitalWrite(IN3, LOW);
+  digitalWrite(IN4, LOW);
+  analogWrite(ENA, 0);
+  analogWrite(ENB, 0);
 }

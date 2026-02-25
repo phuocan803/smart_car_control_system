@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-run.py - SmartCar Control System Main Launcher
+run.py - Smart Car Control System Main Launcher
 """
 import os
 import sys
@@ -18,7 +18,7 @@ def run_script(script_path, args=""):
 def main():
     os.chdir(PROJECT_ROOT)
     print("=" * 70)
-    print("  SMARTCAR - CONTROL SYSTEM LAUNCHER")
+    print("  SMART CAR - CONTROL SYSTEM LAUNCHER")
     print("  Multi-Modal Smart Car Control System")
     print("=" * 70)
     print()
@@ -116,7 +116,7 @@ def main():
         run_script("voice/voice_controller.py")
         
     elif choice == '0':
-        print("\nExiting SmartCar Launcher. Goodbye!")
+        print("\nExiting Smart Car Launcher. Goodbye!")
         sys.exit(0)
         
     else:

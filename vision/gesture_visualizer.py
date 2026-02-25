@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-openCV.py - Test Camera & Hand Gesture Recognition
-NGÀY: 19/11/2025
+gesture_visualizer.py - Camera & Hand Gesture Recognition Visualizer
 """
 import cv2
 import time
@@ -31,12 +30,12 @@ while True:
     
     frame = cv2.flip(frame, 1)
     frame = detector.findHands(frame)
-    gesture, description = detector.analyzeGesture(frame)
+    gesture, description = detector.detectGesture(frame)
     color = colors.get(gesture, (255, 255, 255))
     
     if gesture != last_gesture:
         timestamp = time.strftime("%H:%M:%S")
-        print(f"[{timestamp}] Cử chỉ: {gesture} - {description}")
+        print(f"[{timestamp}] Gesture: {gesture} - {description}")
         last_gesture = gesture
     
     cv2.rectangle(frame, (20, 20), (700, 200), color, -1)
@@ -47,13 +46,13 @@ while True:
     cv2.putText(frame, description, (40, 160),
                 cv2.FONT_HERSHEY_SIMPLEX, 1.5, (255, 255, 255), 4)
     
-    cv2.putText(frame, "X: DUNG (khong co tay) | W: TIEN (nam tay)", 
+    cv2.putText(frame, "X: STOP (No Hands) | W: FORWARD (Both Fists Closed)", 
                 (20, frame.shape[0] - 120),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
-    cv2.putText(frame, "S: LUI (xoe tay)", 
+    cv2.putText(frame, "S: REVERSE (Both Hands Open)", 
                 (20, frame.shape[0] - 80),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
-    cv2.putText(frame, "A: TRAI (tay phai cao hon) | D: PHAI (tay trai cao hon)", 
+    cv2.putText(frame, "A: LEFT (Right Hand Raised) | D: RIGHT (Left Hand Raised)", 
                 (20, frame.shape[0] - 40),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
     

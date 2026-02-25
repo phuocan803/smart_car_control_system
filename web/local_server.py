@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-web_control.py - SmartCar Web Control Server (Mode 4)
-NGÀY: 19/11/2025
+local_server.py - Smart Car Local LAN Web Control Server
 """
 from http.server import HTTPServer, BaseHTTPRequestHandler
 import serial
@@ -16,6 +15,7 @@ BAUD_RATE = 9600
 SERVER_PORT = 8080
 
 def auto_detect_port():
+    """Auto-detect connected USB serial COM ports."""
     import serial.tools.list_ports
     ports = list(serial.tools.list_ports.comports())
     
@@ -39,22 +39,23 @@ class SmartCarController:
             self.connect_arduino()
         else:
             self.is_running = True
-            print("TEST MODE - Không cần Arduino")
+            print("SIMULATION MODE ACTIVE — Running without active Arduino hardware.")
         
         self.send_thread = threading.Thread(target=self.continuous_send, daemon=True)
         self.send_thread.start()
     
     def connect_arduino(self):
+        """Establish serial connection with Arduino microcontroller."""
         try:
             port = COM_PORT if COM_PORT else auto_detect_port()
             if not port:
-                print("Không tìm thấy COM port")
-                print("Chạy ở chế độ TEST MODE")
+                print("Warning: Serial COM port not found.")
+                print("Defaulting to SIMULATION MODE...")
                 self.test_mode = True
                 self.is_running = True
                 return
             
-            print(f"Đang kết nối {port}...")
+            print(f"Connecting to serial port {port}...")
             self.ser = serial.Serial(port, BAUD_RATE, timeout=1)
             time.sleep(2)
             
@@ -65,23 +66,25 @@ class SmartCarController:
                 self.ser.readline()
             
             self.is_running = True
-            print(f"Đã kết nối {port}")
+            print(f"Connected to Arduino on port {port}.")
         except Exception as e:
-            print(f"Lỗi kết nối: {e}")
-            print("Chạy ở chế độ TEST MODE")
+            print(f"Serial connection error: {e}")
+            print("Defaulting to SIMULATION MODE...")
             self.test_mode = True
             self.is_running = True
     
     def send_command(self, command):
+        """Register active vehicle movement command code."""
         if command not in ['W', 'A', 'S', 'D', 'X']:
             return False
         
         self.current_command = command
         timestamp = time.strftime("%H:%M:%S")
-        print(f"[{timestamp}] Lệnh: {command}")
+        print(f"[{timestamp}] Command: {command}")
         return True
     
     def continuous_send(self):
+        """Background thread sending serial command codes at 20Hz (50ms interval)."""
         while self.is_running:
             try:
                 if self.test_mode:
@@ -91,10 +94,11 @@ class SmartCarController:
                     self.command_count += 1
                 time.sleep(0.05)
             except Exception as e:
-                print(f"Lỗi gửi lệnh: {e}")
+                print(f"Serial transmission error: {e}")
                 break
     
     def get_status(self):
+        """Return vehicle connection and command telemetry dictionary."""
         return {
             'current_command': self.current_command,
             'command_count': self.command_count,
@@ -103,13 +107,13 @@ class SmartCarController:
         }
     
     def stop(self):
+        """Close serial connection safely."""
         self.is_running = False
         if self.ser and self.ser.is_open:
             self.ser.write(b'X')
             time.sleep(0.2)
             self.ser.close()
 
-# Global controller instance
 controller = None
 
 class SmartCarRequestHandler(BaseHTTPRequestHandler):
@@ -139,7 +143,7 @@ class SmartCarRequestHandler(BaseHTTPRequestHandler):
                 response = {
                     'success': True,
                     'command': command,
-                    'message': f'Lệnh {command} đã được gửi'
+                    'message': f'Command {command} dispatched.'
                 }
                 self.wfile.write(json.dumps(response).encode('utf-8'))
             else:
@@ -148,7 +152,7 @@ class SmartCarRequestHandler(BaseHTTPRequestHandler):
                 self.end_headers()
                 response = {
                     'success': False,
-                    'message': 'Lệnh không hợp lệ. Chỉ chấp nhận: W, A, S, D, X'
+                    'message': 'Invalid command code. Expected: W, A, S, D, X'
                 }
                 self.wfile.write(json.dumps(response).encode('utf-8'))
         
@@ -161,47 +165,47 @@ class SmartCarRequestHandler(BaseHTTPRequestHandler):
         print(f"[{timestamp}] {args[0]} - {args[1]}")
 
 def get_local_ip():
+    """Get local LAN IP address."""
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.connect(("8.8.8.8", 80))
         ip = s.getsockname()[0]
         s.close()
         return ip
-    except:
+    except Exception:
         return "localhost"
 
 def main(test_mode=False):
     global controller
     
     print("=" * 60)
-    print("SMARTCAR WEB CONTROL SERVER")
+    print("SMART CAR LAN WEB CONTROL SERVER")
     print("=" * 60)
     
-    controller = SmartCarController(test_mode=test_mode)
-    
+    controller = Smart CarController(test_mode=test_mode)
     local_ip = get_local_ip()
-    server = HTTPServer(('0.0.0.0', SERVER_PORT), SmartCarRequestHandler)
+    server = HTTPServer(('0.0.0.0', SERVER_PORT), Smart CarRequestHandler)
     
-    print(f"\nServer đang chạy tại:")
+    print(f"\nServer running at:")
     print(f"  - Local:  http://localhost:{SERVER_PORT}")
     print(f"  - LAN:    http://{local_ip}:{SERVER_PORT}")
-    print(f"\nĐiều khiển bằng curl:")
-    print(f"  curl http://{local_ip}:{SERVER_PORT}/cmd/W  # Tiến")
-    print(f"  curl http://{local_ip}:{SERVER_PORT}/cmd/A  # Trái")
-    print(f"  curl http://{local_ip}:{SERVER_PORT}/cmd/S  # Lùi")
-    print(f"  curl http://{local_ip}:{SERVER_PORT}/cmd/D  # Phải")
-    print(f"  curl http://{local_ip}:{SERVER_PORT}/cmd/X  # Dừng")
-    print(f"\nMở trình duyệt: http://{local_ip}:{SERVER_PORT}")
-    print(f"\nNhấn Ctrl+C để dừng server")
+    print(f"\nDirect REST API Control Examples:")
+    print(f"  curl http://{local_ip}:{SERVER_PORT}/cmd/W  # Forward")
+    print(f"  curl http://{local_ip}:{SERVER_PORT}/cmd/A  # Turn Left")
+    print(f"  curl http://{local_ip}:{SERVER_PORT}/cmd/S  # Reverse")
+    print(f"  curl http://{local_ip}:{SERVER_PORT}/cmd/D  # Turn Right")
+    print(f"  curl http://{local_ip}:{SERVER_PORT}/cmd/X  # Stop")
+    print(f"\nWeb Interface: http://{local_ip}:{SERVER_PORT}")
+    print(f"\nPress Ctrl+C to terminate server.")
     print("=" * 60)
     
     try:
         server.serve_forever()
     except KeyboardInterrupt:
-        print("\n\nĐang đóng server...")
+        print("\n\nTerminating web control server...")
         controller.stop()
         server.shutdown()
-        print("Server đã đóng")
+        print("Server stopped cleanly.")
 
 if __name__ == "__main__":
     import sys

@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-hand.py - MediaPipe Hand Detection Module
-NGÀY: 19/11/2025
+hand_utils.py - MediaPipe Hand Detection & Gesture Analysis Helper Utilities
 """
 import cv2
 import mediapipe as mp
@@ -59,55 +58,65 @@ class handDetector:
                 handType = handedness.classification[0].label
                 allHands.append({'lmList': lmList, 'type': handType})
         return allHands
-    
-    def countExtendedFingers(self, lmList):
+
+    def getFingersUp(self, lmList):
+        tipIds = [4, 8, 12, 16, 20]
+        fingers = []
         if len(lmList) == 0:
-            return 0
-        
-        fingerTips = [8, 12, 16, 20]
-        fingerPips = [6, 10, 14, 18]
-        
-        count = 0
-        for tip, pip in zip(fingerTips, fingerPips):
-            if lmList[tip][2] < lmList[pip][2] - 20:
-                count += 1
-        return count
-    
-    def getHandHeight(self, lmList):
-        if len(lmList) == 0:
-            return 0
-        return (lmList[0][2] + lmList[9][2]) / 2
-    
-    def analyzeGesture(self, img):
+            return fingers
+
+        # Thumb
+        if lmList[tipIds[0]][1] > lmList[tipIds[0] - 1][1]:
+            fingers.append(1)
+        else:
+            fingers.append(0)
+
+        # 4 Fingers
+        for id in range(1, 5):
+            if lmList[tipIds[id]][2] < lmList[tipIds[id] - 2][2]:
+                fingers.append(1)
+            else:
+                fingers.append(0)
+        return fingers
+
+    def detectGesture(self, img):
         allHands = self.getAllHandsPosition(img)
         
-        if len(allHands) != 2:
-            return 'X', "DUNG - Can 2 tay"
+        if len(allHands) == 0:
+            return 'X', "No hands detected"
         
         leftHand = None
         rightHand = None
+        
         for hand in allHands:
             if hand['type'] == 'Left':
-                rightHand = hand
-            else:
                 leftHand = hand
+            elif hand['type'] == 'Right':
+                rightHand = hand
         
         if leftHand is None or rightHand is None:
-            return 'X', "DUNG - Can 2 tay"
+            return 'X', "Requires 2 hands"
         
-        leftFingers = self.countExtendedFingers(leftHand['lmList'])
-        rightFingers = self.countExtendedFingers(rightHand['lmList'])
-        leftHeight = self.getHandHeight(leftHand['lmList'])
-        rightHeight = self.getHandHeight(rightHand['lmList'])
+        leftFingers = self.getFingersUp(leftHand['lmList'])
+        rightFingers = self.getFingersUp(rightHand['lmList'])
         
-        if leftHeight < rightHeight - 80:
-            return 'D', f"PHAI (L:{leftFingers} R:{rightFingers})"
-        elif rightHeight < leftHeight - 80:
-            return 'A', f"TRAI (L:{leftFingers} R:{rightFingers})"
+        leftCount = sum(leftFingers)
+        rightCount = sum(rightFingers)
         
-        if leftFingers <= 1 and rightFingers <= 1:
-            return 'W', f"TIEN (L:{leftFingers} R:{rightFingers})"
-        elif leftFingers >= 3 and rightFingers >= 3:
-            return 'S', f"LUI (L:{leftFingers} R:{rightFingers})"
-        else:
-            return 'X', f"DUNG (L:{leftFingers} R:{rightFingers})"
+        leftWrist = leftHand['lmList'][0][2]
+        rightWrist = rightHand['lmList'][0][2]
+        
+        # Check Forward / Reverse / Left / Right gesture logic
+        if leftCount <= 1 and rightCount <= 1:
+            return 'W', "Forward (Both fists closed)"
+        
+        if leftCount >= 3 and rightCount >= 3:
+            return 'S', "Reverse (Both hands open)"
+        
+        diff = leftWrist - rightWrist
+        if diff > 80:
+            return 'A', "Turn Left (Right hand raised)"
+        elif diff < -80:
+            return 'D', "Turn Right (Left hand raised)"
+            
+        return 'X', "Default / Stop Pose"

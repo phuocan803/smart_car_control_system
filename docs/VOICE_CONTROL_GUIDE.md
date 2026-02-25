@@ -1,4 +1,4 @@
-# SmartCar Voice Control Architecture Guide
+# Smart Car Voice Control Architecture Guide
 
 System architecture, API flow, and command processing for browser speech recognition and AWS Polly text-to-speech feedback.
 
@@ -20,11 +20,11 @@ System architecture, API flow, and command processing for browser speech recogni
 
 | Vehicle Action | Internal Code | Example Spoken Phrases |
 |----------------|---------------|------------------------|
-| Move Forward | `W` | `"go forward"`, `"drive ahead"`, `"tiến"` |
-| Move Reverse | `S` | `"reverse"`, `"move backward"`, `"lùi"` |
-| Turn Left | `A` | `"turn left"`, `"steer left"`, `"trái"` |
-| Turn Right | `D` | `"turn right"`, `"steer right"`, `"phải"` |
-| Emergency Stop | `X` | `"stop"`, `"halt"`, `"brake"`, `"dừng"` |
+| Move Forward | `W` | `"go forward"`, `"drive ahead"`, `"move forward"` |
+| Move Reverse | `S` | `"reverse"`, `"move backward"`, `"go back"` |
+| Turn Left | `A` | `"turn left"`, `"steer left"`, `"go left"` |
+| Turn Right | `D` | `"turn right"`, `"steer right"`, `"go right"` |
+| Emergency Stop | `X` | `"stop"`, `"halt"`, `"brake"` |
 
 ---
 

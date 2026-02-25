@@ -1,10 +1,9 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="en">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Raspberry Pi Camera Stream</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Camera Web Stream - Smart Car</title>
     <style>
         * {
             margin: 0;
@@ -13,167 +12,148 @@
         }
 
         body {
-            font-family: 'Segoe UI', Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1a202c;
+            color: #e2e8f0;
             display: flex;
-            flex-direction: column;
+            justify-content: center;
             align-items: center;
+            min-height: 100vh;
             padding: 20px;
         }
 
         .container {
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-            padding: 30px;
             max-width: 900px;
             width: 100%;
+            background: #2d3748;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+            text-align: center;
         }
 
         h1 {
-            color: #667eea;
-            text-align: center;
-            margin-bottom: 10px;
-            font-size: 2em;
+            color: #48bb78;
+            margin-bottom: 5px;
+            font-size: 28px;
         }
 
         .subtitle {
-            text-align: center;
-            color: #666;
-            margin-bottom: 30px;
-            font-size: 1.1em;
+            color: #a0aec0;
+            font-size: 14px;
+            margin-bottom: 20px;
         }
 
         .video-wrapper {
             position: relative;
-            width: 100%;
             background: #000;
-            border-radius: 10px;
+            border-radius: 8px;
             overflow: hidden;
-            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            margin-bottom: 20px;
+            min-height: 480px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
         .video-stream {
             width: 100%;
             height: auto;
+            max-height: 600px;
             display: block;
         }
 
         .info-panel {
-            margin-top: 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            background: #1a202c;
             padding: 15px;
-            background: #f8f9fa;
             border-radius: 8px;
-            border-left: 4px solid #667eea;
+            font-size: 14px;
         }
 
         .info-item {
             display: flex;
-            justify-content: space-between;
-            padding: 8px 0;
-            border-bottom: 1px solid #e0e0e0;
-        }
-
-        .info-item:last-child {
-            border-bottom: none;
+            flex-direction: column;
+            align-items: center;
         }
 
         .info-label {
-            font-weight: 600;
-            color: #555;
+            color: #718096;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 3px;
         }
 
         .info-value {
-            color: #667eea;
-            font-family: monospace;
+            color: #edf2f7;
+            font-weight: 600;
         }
 
         .status {
-            display: inline-block;
-            padding: 5px 15px;
-            background: #4CAF50;
-            color: white;
-            border-radius: 20px;
-            font-size: 0.9em;
-            margin-top: 10px;
-        }
-
-        @media (max-width: 768px) {
-            .container {
-                padding: 15px;
-            }
-
-            h1 {
-                font-size: 1.5em;
-            }
-
-            .subtitle {
-                font-size: 1em;
-            }
+            grid-column: 1 / -1;
+            color: #48bb78;
+            font-weight: bold;
+            font-size: 13px;
         }
     </style>
 </head>
-
 <body>
     <div class="container">
-        <h1>🎥 Raspberry Pi Camera Stream</h1>
-        <p class="subtitle">SmartCar - Camera Monitoring System</p>
+        <h1>Camera Stream Monitor</h1>
+        <p class="subtitle">Smart Car Real-Time Monitoring System</p>
 
         <div class="video-wrapper">
-            <img class="video-stream" src="/video_feed" alt="Camera Stream">
+            <img class="video-stream" src="/video_feed" alt="Camera Feed Stream">
         </div>
 
         <div class="info-panel">
             <div class="info-item">
-                <span class="info-label">Loại camera:</span>
+                <span class="info-label">Camera Driver:</span>
                 <span class="info-value" id="camera-type">Loading...</span>
             </div>
             <div class="info-item">
-                <span class="info-label">Độ phân giải:</span>
+                <span class="info-label">Resolution:</span>
                 <span class="info-value" id="resolution">Loading...</span>
             </div>
             <div class="info-item">
-                <span class="info-label">Frame rate:</span>
+                <span class="info-label">Frame Rate:</span>
                 <span class="info-value" id="fps">Loading...</span>
             </div>
             <div class="info-item">
-                <span class="info-label">Chất lượng JPEG:</span>
+                <span class="info-label">JPEG Quality:</span>
                 <span class="info-value" id="quality">Loading...</span>
             </div>
             <div class="info-item">
-                <span class="info-label">Địa chỉ LAN:</span>
+                <span class="info-label">LAN Stream URL:</span>
                 <span class="info-value" id="url">Loading...</span>
             </div>
-            <span class="status">● Đang stream</span>
+            <span class="status">Streaming Live</span>
         </div>
     </div>
 
     <script>
-        // Load camera info from server
         fetch('/camera_info')
             .then(response => response.json())
             .then(data => {
                 const cameraNames = {
-                    'picamera2': 'Pi Camera Module (picamera2)',
-                    'fswebcam': 'USB Webcam (fswebcam)',
-                    'unknown': 'Không phát hiện',
-                    'auto': 'Tự động phát hiện'
+                    'picamera': 'Pi Camera Module',
+                    'usb_webcam': 'USB Webcam',
+                    'unknown': 'Generic Video Device'
                 };
-
-                document.getElementById('camera-type').textContent =
-                    cameraNames[data.camera_type] || data.camera_type;
-                document.getElementById('resolution').textContent =
-                    `${data.width}x${data.height}`;
+                
+                document.getElementById('camera-type').textContent = cameraNames[data.camera_type] || data.camera_type;
+                document.getElementById('resolution').textContent = `${data.width}x${data.height}`;
                 document.getElementById('fps').textContent = `${data.fps} FPS`;
                 document.getElementById('quality').textContent = `${data.quality}%`;
-                document.getElementById('url').textContent =
-                    `http://${data.ip}:${data.port}`;
+                document.getElementById('url').textContent = `http://${data.ip}:${data.port}`;
             })
-            .catch(error => {
-                console.error('Error loading camera info:', error);
+            .catch(err => {
+                console.error('Failed to load camera metrics:', err);
             });
     </script>
 </body>
-
 </html>

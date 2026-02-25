@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-test_car.py - SmartCar Serial Test
-NGÀY: 19/11/2025
+motor_test.py - Smart Car Serial Motor Driver Test Script
 """
 import serial
 import time
@@ -10,6 +9,7 @@ COM_PORT = ''
 BAUD_RATE = 9600
 
 def auto_detect_port():
+    """Auto-detect connected USB serial COM ports."""
     import serial.tools.list_ports
     ports = list(serial.tools.list_ports.comports())
     
@@ -23,21 +23,21 @@ def auto_detect_port():
 
 def test_car():
     print("=" * 50)
-    print("  TEST SMARTCAR - SERIAL CONTROL")
+    print("  SMART CAR SERIAL MOTOR DRIVER TEST")
     print("=" * 50)
     
     try:
         port = COM_PORT if COM_PORT else auto_detect_port()
         if not port:
-            print("\nKhong tim thay COM port")
+            print("\nError: Serial COM port not found.")
             return
         
-        print(f"\nKet noi toi {port}...")
+        print(f"\nConnecting to {port} at {BAUD_RATE} baud...")
         ser = serial.Serial(port, BAUD_RATE, timeout=1)
         time.sleep(2)
-        print("Ket noi thanh cong!\n")
+        print("Connected successfully!\n")
         
-        print("Arduino output:")
+        print("Arduino initial boot telemetry:")
         for _ in range(15):
             if ser.in_waiting > 0:
                 line = ser.readline().decode('utf-8', errors='ignore').strip()
@@ -45,70 +45,37 @@ def test_car():
                     print(f"  {line}")
             time.sleep(0.1)
         
-        print("\nGui lenh '1' - Chon OpenCV Mode")
+        print("\nSending command '1' - Selecting OpenCV Mode...")
         ser.write(b'1')
         time.sleep(1)
         
-        print("\nArduino response:")
-        for _ in range(5):
-            if ser.in_waiting > 0:
-                line = ser.readline().decode('utf-8', errors='ignore').strip()
-                if line:
-                    print(f"  {line}")
-            time.sleep(0.1)
-        
-        print("\n" + "=" * 50)
-        print("  BAT DAU TEST CHUYEN DONG")
-        print("=" * 50)
-        
-        commands = [
-            ('W', 'TIEN', 2),
-            ('X', 'DUNG', 1),
-            ('S', 'LUI', 2),
-            ('X', 'DUNG', 1),
-            ('A', 'TRAI', 2),
-            ('X', 'DUNG', 1),
-            ('D', 'PHAI', 2),
-            ('X', 'DUNG', 1),
+        test_sequence = [
+            ('W', "FORWARD", 2),
+            ('S', "REVERSE", 2),
+            ('A', "LEFT", 1.5),
+            ('D', "RIGHT", 1.5),
+            ('X', "STOP", 1)
         ]
         
-        for cmd, name, duration in commands:
-            print(f"\nLenh: {cmd} ({name}) - {duration}s")
+        print("\nExecuting test sequence:")
+        for cmd, name, duration in test_sequence:
+            print(f"  Command: {cmd} ({name}) - Duration: {duration}s")
             ser.write(cmd.encode())
             
-            for i in range(duration):
-                print(f"  [{i+1}/{duration}s]", end='\r')
-                time.sleep(1)
-            print()
+            start_time = time.time()
+            while time.time() - start_time < duration:
+                if ser.in_waiting > 0:
+                    line = ser.readline().decode('utf-8', errors='ignore').strip()
+                    if line:
+                        print(f"    Arduino response: {line}")
+                time.sleep(0.1)
         
-        print("\nGui lenh dung")
-        ser.write(b'X')
-        time.sleep(0.5)
-        
-        print("\n" + "=" * 50)
-        print("  TEST HOAN THANH")
-        print("=" * 50)
-        
+        print("\nTest sequence complete! Closing serial port...")
         ser.close()
-        print("\nDa dong ket noi Serial")
+        print("Serial port closed cleanly.")
         
-    except serial.SerialException as e:
-        print(f"\nLoi Serial: {e}")
-        print("Kiem tra:")
-        print("  - Arduino da ket noi chua?")
-        print("  - COM port dung chua?")
-        print("  - Serial Monitor da dong chua?")
-    except KeyboardInterrupt:
-        print("\n\nDung boi nguoi dung")
-        if 'ser' in locals() and ser.is_open:
-            ser.write(b'X')
-            ser.close()
     except Exception as e:
-        print(f"\nLoi: {e}")
+        print(f"\nSerial test failed: {e}")
 
 if __name__ == "__main__":
-    print("\nSMARTCAR TEST SCRIPT")
-    print("Chu y: Arduino phai duoc upload SmartCar.ino\n")
-    
-    input("Nhan Enter de bat dau test...")
     test_car()
